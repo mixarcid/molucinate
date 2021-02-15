@@ -1,0 +1,7 @@
+grid_dim: 16
+grid_step: 0.5
+max_atoms: 38
+max_valence: 6
+
+defaults:
+  - platform: standard
