@@ -4,9 +4,7 @@ import math
 import numpy as np
 
 from chem import *
-
-def get_grid_sz(cfg):
-    return int(cfg.grid_dim/cfg.grid_step)
+from utils import *
 
 class TensorBonds:
     data: torch.Tensor
@@ -87,14 +85,30 @@ class TensorMol:
 
     grid_coords = None
 
-    def __init__(self, cfg, mol):
+    def __init__(self,
+                 cfg=None,
+                 mol=None,
+                 molgrid=None,
+                 kps=None,
+                 kps_1h=None,
+                 atom_types=None,
+                 atom_valences=None,
+                 bonds=None):
+        if cfg=None:
+            self.molgrid = molgrid
+            self.kps = kps
+            self.kps_1h = kps_1h
+            self.atom_types = atom_types
+            self.atom_valences = atom_valences
+            self.bonds = bonds
+            return
         TensorMol.ensure_grid_coords(cfg)
         tmb = TensorMolBasic(cfg, mol)
         self.atom_types = tmb.atom_types
         self.atom_valences = tmb.atom_valences
         self.bonds = tmb.bonds
 
-        sz = get_grid_sz(cfg)
+        sz = get_grid_size(cfg)
         self.grid_shape = (sz,sz,sz)
         self.grid_dim = cfg.grid_dim
         # batch, atom_idx, width, height, depth
