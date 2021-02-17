@@ -1,14 +1,26 @@
-grid_dim: 16
-grid_step: 0.5
-max_atoms: 38
-max_valence: 6
+name: molgrid_test
 
-# cfg:
-#   num_workers: 8
-#   stop_at: null
+data:
+  grid_dim: 16
+  grid_step: 0.5
+  max_atoms: 38
+  max_valence: 6
 
-#   zinc_dir: "/home/boris/Data/Zinc/"
-#   zinc_filtered_list: "/home/boris/Data/Zinc/files_filtered_both.txt"
+model:
+  name: vae
+  optimizer: adam
+  learn_rate: 1e-4
+  latent_size: 1024
+  hidden_size: 2048
+  net:
+    name: basic
+    init_filters: 32
+  loss:
+    kl_lambda: 1.0
+    l2_lambda: 1.0
+
+dataset: zinc
+batch_size: 8
 
 defaults:
-  - platform: standard
+  - platform: local

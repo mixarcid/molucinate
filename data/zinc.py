@@ -2,7 +2,7 @@ import torch
 import hydra
 from rdkit import Chem
 from torch.utils import data
-from tensor_mol import TensorMol
+from .tensor_mol import TensorMol
 
 TT_SPLIT = 0.9
 class ZincDataset(data.Dataset):
@@ -29,7 +29,7 @@ class ZincDataset(data.Dataset):
         fname = self.cfg.platform.zinc_dir + fname.split("/")[-1]
 
         mol = Chem.MolFromMol2File(fname)
-        return TensorMol(self.cfg, mol)
+        return TensorMol(self.cfg.data, mol)
 
 @hydra.main(config_path='../cfg', config_name='config.yaml')
 def main(cfg):    

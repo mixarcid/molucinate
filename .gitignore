@@ -17,4 +17,4 @@ test_output/*
 results/*
 !*/.gitkeep
 tmp.sh
-cfg/platform/local.yml
+cfg/platform/local.yaml

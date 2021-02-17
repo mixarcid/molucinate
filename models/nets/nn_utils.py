@@ -17,14 +17,14 @@ class Unflatten(nn.Module):
         return input.view(input.size(0), *self.shape)
 
 def conv3(in_f, out_f):
-    return nn.Seqential(
+    return nn.Sequential(
         nn.Conv3d(in_f, out_f, kernel_size=3, bias=False, padding=1),
         nn.BatchNorm3d(out_f),
         nn.LeakyReLU(LEAK_VALUE)
     )
 
 def conv1(in_f, out_f):
-    return nn.Seqential(
+    return nn.Sequential(
         nn.Conv3d(in_f, out_f, kernel_size=1, bias=False),
         nn.BatchNorm3d(out_f),
         nn.LeakyReLU(LEAK_VALUE)
@@ -34,7 +34,7 @@ def downsample():
     return nn.MaxPool3d(2)
 
 def upsample(in_f, out_f):
-    return nn.Seqential(
+    return nn.Sequential(
         nn.ConvTranspose3d(in_f, out_f, kernel_size=2, stride=2, bias=False),
         nn.BatchNorm3d(out_f),
         nn.LeakyReLU(LEAK_VALUE)

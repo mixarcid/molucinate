@@ -9,17 +9,19 @@ class VAE(pl.LightningModule):
     def __init__(self, cfg, gcfg):
         super(VAE, self).__init__()
         self.optim_name = cfg.optimizer
+        self.learn_rate = cfg.learn_rate
+        self.loss_cfg = cfg.loss
         self.latent_size = cfg.latent_size
         self.hidden_size = cfg.hidden_size
-        self.encoder = make_encoder(cfg.net)
-        self.decoder = make_decoder(cfg.net)
+        self.encoder = make_encoder(self.hidden_size, cfg, gcfg)
+        self.decoder = make_decoder(self.hidden_size, cfg, gcfg)
         # hidden => mu
-        self.fc1 = nn.Linear(self.hidden_sz, self.latent_size)
+        self.fc1 = nn.Linear(self.hidden_size, self.latent_size)
         # hidden => logvar
-        self.fc2 = nn.Linear(self.hidden_sz, self.latent_size)
+        self.fc2 = nn.Linear(self.hidden_size, self.latent_size)
 
     def encode(self, tmol):
-        h = self.encoder(*args)
+        h = self.encoder(tmol)
         mu, logvar = self.fc1(h), self.fc2(h)
         return mu, logvar
 
@@ -41,7 +43,7 @@ class VAE(pl.LightningModule):
         mu, logvar = self(batch)
         z = self.reparameterize(mu, logvar)
         recon = self.decode(z)
-        loss, terms = vae_loss(recon, batch, mu, logvar)
+        loss, terms = vae_loss(recon, batch, mu, logvar, self.loss_cfg)
         self.log('train_loss', loss, prog_bar=True)
         for name, term in terms.items():
             self.log(f'train_{name}_loss', term)
@@ -57,14 +59,14 @@ class VAE(pl.LightningModule):
             'adam': torch.optim.Adam,
             'sgd': torch.optim.SGD
         }[self.optim_name]
-        optimizer = optim_class(self.parameters(), lr=self.args.learn_rate)
+        optimizer = optim_class(self.parameters(), lr=self.learn_rate)
         return optimizer
 
     def shared_eval(self, batch, batch_idx, prefix):
         mu, logvar = self(batch)
         z = self.reparameterize(mu, logvar)
         recon = self.decode(z)
-        loss, terms = vae_loss(recon, batch, mu, logvar)
+        loss, terms = vae_loss(recon, batch, mu, logvar, self.loss_cfg)
         self.log(f'{prefix}_loss', loss, prog_bar=True)
         for name, term in terms.items():
             self.log(f'{prefix}_{name}_loss', term)

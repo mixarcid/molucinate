@@ -3,14 +3,18 @@ from rdkit import Chem
 import math
 import numpy as np
 
-from chem import *
-from utils import *
+from .chem import *
+from .utils import *
+from .dataloader import Collatable
 
-class TensorBonds:
+class TensorBonds(Collatable):
     data: torch.Tensor
     max_atoms: int
 
-    def __init__(self, cfg, mol):
+    def __init__(self, cfg=None, mol=None, data=None, example=None):
+        if cfg is None:
+            self.data = data
+            self.max_atoms = example.max_atoms
         self.max_atoms = cfg.max_atoms
         # batch, bond_idx, bond_type
         self.data = torch.zeros((1, self.get_max_bonds(), NUM_BOND_TYPES))
@@ -75,7 +79,7 @@ class TensorMolBasic:
         self.coords -= center_coord
 
 
-class TensorMol:
+class TensorMol(Collatable):
     molgrid: torch.Tensor
     kps: torch.Tensor
     kps_1h: torch.Tensor
@@ -93,8 +97,9 @@ class TensorMol:
                  kps_1h=None,
                  atom_types=None,
                  atom_valences=None,
-                 bonds=None):
-        if cfg=None:
+                 bonds=None,
+                 example=None):
+        if cfg is None:
             self.molgrid = molgrid
             self.kps = kps
             self.kps_1h = kps_1h
@@ -168,5 +173,18 @@ def test_basic():
     tm = TensorMol(cfg, mol)
     print(torch.amax(tm.molgrid))
 
+def test_collate():
+    from omegaconf import OmegaConf
+    cfg = OmegaConf.create({
+        'grid_dim': 16,
+        'grid_step': 0.5,
+        'max_atoms': 38,
+        'max_valence': 6
+    })
+    mol = Chem.MolFromMol2File('test_data/zinc100001.mol2')
+    tm = TensorMol(cfg, mol)
+    for attr in tm.recurse():
+        print(attr)
+        
 if __name__ == "__main__":
-    test_basic()
+    test_collate()
