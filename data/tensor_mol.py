@@ -3,22 +3,31 @@ from rdkit import Chem
 import math
 import numpy as np
 
-from .chem import *
-from .utils import *
-from .dataloader import Collatable
+try:
+    from .chem import *
+    from .utils import *
+    from .dataloader import Collatable
+except ImportError:
+    from chem import *
+    from utils import *
+    from dataloader import Collatable
+
 
 class TensorBonds(Collatable):
     data: torch.Tensor
     max_atoms: int
 
-    def __init__(self, cfg=None, mol=None, data=None, example=None):
+    def __init__(self, cfg=None, mol=None, data=None, example=None, collate_len=None):
+        super().__init__(example, collate_len)
         if cfg is None:
             self.data = data
-            self.max_atoms = example.max_atoms
+            if example is not None:
+                self.max_atoms = example.max_atoms
+            return
         self.max_atoms = cfg.max_atoms
         # batch, bond_idx, bond_type
-        self.data = torch.zeros((1, self.get_max_bonds(), NUM_BOND_TYPES))
-        self.data[0,:,BOND_TYPE_HASH['_']] = 1
+        self.data = torch.zeros((self.get_max_bonds(), NUM_BOND_TYPES))
+        self.data[:,BOND_TYPE_HASH['_']] = 1
 
     def get_max_bonds(self):
         return int(self.max_atoms*(self.max_atoms-1)*0.5)
@@ -30,8 +39,8 @@ class TensorBonds(Collatable):
         start, end = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
         bond_type = bond.GetBondType()
         idx = self.get_bond_idx(start, end)
-        self.data[0,idx,BOND_TYPE_HASH[bond_type]] = 1
-        self.data[0,idx,BOND_TYPE_HASH['_']] = 0
+        self.data[idx,BOND_TYPE_HASH[bond_type]] = 1
+        self.data[idx,BOND_TYPE_HASH['_']] = 0
 
 # just stores atom coords, atom types, and bonds
 # not used by any model directly, but useful intermediate
@@ -44,17 +53,17 @@ class TensorMolBasic:
 
     def __init__(self, cfg, mol):
         # batch, atom_idx, dimension
-        self.coords = torch.zeros((1, cfg.max_atoms, 3))
+        self.coords = torch.zeros((cfg.max_atoms, 3))
         # batch, atom_idx, atom_type
-        self.atom_types = torch.zeros((1, cfg.max_atoms, NUM_ATOM_TYPES))
+        self.atom_types = torch.zeros((cfg.max_atoms, NUM_ATOM_TYPES))
         # batch, atom_idx, atom_valence
-        self.atom_valences = torch.zeros((1, cfg.max_atoms, cfg.max_valence+1))
+        self.atom_valences = torch.zeros((cfg.max_atoms, cfg.max_valence+1))
 
         for i, atom in enumerate(mol.GetAtoms()):
             atom_type = ATOM_TYPE_HASH[atom.GetSymbol()]
-            self.atom_types[0,i,atom_type] = 1
+            self.atom_types[i,atom_type] = 1
             pos = mol.GetConformer().GetAtomPosition(i)
-            self.coords[0,i] = torch.tensor([ pos.x, pos.y, pos.z ])
+            self.coords[i] = torch.tensor([ pos.x, pos.y, pos.z ])
         self.center_coords(cfg)
 
         valences = [ 0 for i in range(cfg.max_atoms) ]
@@ -64,14 +73,14 @@ class TensorMolBasic:
             end_idx = bond.GetEndAtomIdx()
             valences[end_idx] += 1
         for i, valence in enumerate(valences):
-            self.atom_valences[0,i,valence] = 1
+            self.atom_valences[i,valence] = 1
 
     def center_coords(self, cfg):
         min_coord = torch.zeros((3,))
         max_coord = torch.zeros((3,))
         for i in range(3):
-            min_coord[i] = min(self.coords[0,:,i])
-            max_coord[i] = max(self.coords[0,:,i])
+            min_coord[i] = min(self.coords[:,i])
+            max_coord[i] = max(self.coords[:,i])
         center_coord = 0.5*(min_coord + max_coord)
         box_dims = max_coord - min_coord
         if torch.any(box_dims > cfg.grid_dim):
@@ -98,7 +107,9 @@ class TensorMol(Collatable):
                  atom_types=None,
                  atom_valences=None,
                  bonds=None,
-                 example=None):
+                 example=None,
+                 collate_len=None):
+        super().__init__(example, collate_len)
         if cfg is None:
             self.molgrid = molgrid
             self.kps = kps
@@ -117,19 +128,19 @@ class TensorMol(Collatable):
         self.grid_shape = (sz,sz,sz)
         self.grid_dim = cfg.grid_dim
         # batch, atom_idx, width, height, depth
-        kp_shape = (1, cfg.max_atoms, sz, sz, sz)
+        kp_shape = (cfg.max_atoms, sz, sz, sz)
         self.kps = torch.zeros(kp_shape)
         self.kps_1h = torch.zeros(kp_shape)
         # batch, atom_type, width, height, depth
-        self.molgrid = torch.zeros((1, NUM_ATOM_TYPES, sz, sz, sz))
+        self.molgrid = torch.zeros((NUM_ATOM_TYPES, sz, sz, sz))
 
-        for i, (coord, atom) in enumerate(zip(tmb.coords[0], self.atom_types[0])):
+        for i, (coord, atom) in enumerate(zip(tmb.coords, self.atom_types)):
             atom = torch.argmax(atom)
             if atom == ATOM_TYPE_HASH['_']: break
             grid = self.gridify_atom(coord, atom)
-            self.kps[0,i] = grid
-            self.kps_1h[0,i] = self.gridify_atom(coord, atom, True)
-            self.molgrid[0,atom] += grid
+            self.kps[i] = grid
+            self.kps_1h[i] = self.gridify_atom(coord, atom, True)
+            self.molgrid[atom] += grid
             
     def ensure_grid_coords(cfg):
         if TensorMol.grid_coords is not None: return

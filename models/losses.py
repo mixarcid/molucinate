@@ -6,6 +6,6 @@ def kl_loss(mu, logvar):
 
 def vae_loss(recon, x, mu, logvar, cfg):
     kl = kl_loss(mu, logvar)
-    l2 = ((recon-x)**2).mean()
+    l2 = ((recon.molgrid-x.molgrid)**2).mean()
     ret = kl*cfg.kl_lambda + l2*cfg.l2_lambda
     return ret, { 'kl': kl, 'l2': l2 }

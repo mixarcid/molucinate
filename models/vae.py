@@ -14,7 +14,7 @@ class VAE(pl.LightningModule):
         self.latent_size = cfg.latent_size
         self.hidden_size = cfg.hidden_size
         self.encoder = make_encoder(self.hidden_size, cfg, gcfg)
-        self.decoder = make_decoder(self.hidden_size, cfg, gcfg)
+        self.decoder = make_decoder(self.latent_size, cfg, gcfg)
         # hidden => mu
         self.fc1 = nn.Linear(self.hidden_size, self.latent_size)
         # hidden => logvar
@@ -47,6 +47,7 @@ class VAE(pl.LightningModule):
         self.log('train_loss', loss, prog_bar=True)
         for name, term in terms.items():
             self.log(f'train_{name}_loss', term)
+        return loss
 
     def validation_step(self, batch, batch_idx):
         return self.shared_eval(batch, batch_idx, 'val')

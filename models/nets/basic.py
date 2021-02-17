@@ -36,7 +36,7 @@ class BasicEncoder(nn.Module):
         mul = get_linear_mul(filter_list, gcfg)
         self.fc = nn.Sequential(
             Flatten(),
-            nn.Linear(mul*filter_list[-1], hidden_size),
+            nn.Linear(mul*filter_list[-1], hidden_size, bias=False),
             nn.LeakyReLU(LEAK_VALUE)
         )
 
@@ -48,30 +48,35 @@ class BasicEncoder(nn.Module):
 
 class BasicDecoder(nn.Module):
 
-    def __init__(self, hidden_size, cfg, gcfg):
+    def __init__(self, latent_size, cfg, gcfg):
         super(BasicDecoder, self).__init__()
         filter_list = [
             cfg.init_filters*8,
             cfg.init_filters*4,
             cfg.init_filters*2,
             cfg.init_filters,
-            NUM_ATOM_TYPES
+            cfg.init_filters
         ]
         width = get_final_width(filter_list, gcfg)
         mul = get_linear_mul(filter_list, gcfg)
         self.fc = nn.Sequential(
-            nn.Linear(hidden_size, filter_list[0]*mul),
+            nn.Linear(latent_size, filter_list[0]*mul),
             nn.LeakyReLU(LEAK_VALUE),
             Unflatten((filter_list[0], width, width, width))
         )
         self.convs = nn.ModuleList()
         for i, filt in enumerate(filter_list[:-1]):
+            filt_next = filter_list[i+1]
             self.convs.append(nn.Sequential(
-                conv3(filt, filter_list[i+1]),
+                upsample(filt, filt_next),
+                conv3(filt_next, filt_next)
             ))
+        self.final_conv = nn.Conv3d(filter_list[-1], NUM_ATOM_TYPES,
+                                    kernel_size=1, bias=True)
 
     def forward(self, x):
         x = self.fc(x)
         for conv in self.convs:
             x = conv(x)
+        x = self.final_conv(x)
         return TensorMol(molgrid=x)

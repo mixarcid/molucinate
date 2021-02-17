@@ -4,7 +4,11 @@ import pyrender
 import cv2
 import os
 import numpy as np
-from chem import *
+import torch
+try:
+    from .chem import *
+except ImportError:
+    from chem import *
 
 should_egl = True
 try:
@@ -16,7 +20,7 @@ if should_egl:
     os.environ["PYOPENGL_PLATFORM"] = "egl"
 
 def get_molgrid_meshes(tmol, alpha, thresh):
-    molgrid = tmol.molgrid.cpu().numpy()[0]
+    molgrid = tmol.molgrid.cpu().numpy()
     grid_dims = np.array([tmol.grid_dim, tmol.grid_dim, tmol.grid_dim])
     meshes = []
     for atom in ATOM_TYPE_LIST:
