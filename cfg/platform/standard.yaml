@@ -5,3 +5,7 @@ stop_at: null
 
 zinc_dir: "/home/boris/Data/Zinc/"
 zinc_filtered_list: "/home/boris/Data/Zinc/files_filtered_both.txt"
+
+results_path: "/home/boris/Data/mol-results/"
+
+cb_n_batches: 1

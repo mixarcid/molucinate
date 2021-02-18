@@ -4,6 +4,7 @@ import torch
 import pytorch_lightning as pl
 from pytorch_lightning.loggers.neptune import NeptuneLogger
 
+from data.mol_callback import MolCallback
 from data.dataloader import DataLoader
 from data.make_dataset import make_dataset
 from models.make_model import make_model
@@ -33,7 +34,7 @@ def train(cfg):
     test_d = make_dataset(cfg, False)
 
     train_loader = DataLoader(train_d, batch_size=cfg.batch_size, num_workers=n_workers, pin_memory=True, shuffle=True)
-    test_loader = DataLoader(test_d, batch_size=cfg.batch_size, num_workers=n_workers, pin_memory=True)
+    test_loader = DataLoader(test_d, batch_size=cfg.batch_size, num_workers=n_workers, pin_memory=True, shuffle=True)
 
     model = make_model(cfg)
 
@@ -49,9 +50,10 @@ def train(cfg):
                                tags=tags)
 
     checkpoint_callback = None
+    mol_cb = MolCallback(cfg)
     trainer = pl.Trainer(gpus=int(torch.cuda.is_available()),
                          checkpoint_callback=checkpoint_callback,
-                         callbacks = [],
+                         callbacks = [mol_cb],
                          logger=logger)
     trainer.fit(model, train_loader, test_loader)
     

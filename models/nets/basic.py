@@ -50,6 +50,7 @@ class BasicDecoder(nn.Module):
 
     def __init__(self, latent_size, cfg, gcfg):
         super(BasicDecoder, self).__init__()
+        self.data_cfg = gcfg.data
         filter_list = [
             cfg.init_filters*8,
             cfg.init_filters*4,
@@ -79,4 +80,4 @@ class BasicDecoder(nn.Module):
         for conv in self.convs:
             x = conv(x)
         x = self.final_conv(x)
-        return TensorMol(molgrid=x)
+        return TensorMol(self.data_cfg, molgrid=x)

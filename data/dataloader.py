@@ -4,8 +4,8 @@ from torch.utils.data.dataloader import default_collate
 
 class Collatable:
 
-    def __init__(self, example=None, collate_len=None):
-        self.collate_len = collate_len
+    def __init__(self, example=None):
+        pass
     
     def recurse(self):
         for attr in dir(self):
@@ -21,10 +21,15 @@ class Collatable:
         return type(self)(example=self, **kwargs)
 
     def __len__(self):
-        if self.collate_len is None:
-            raise Exception("Trying to determine the len of a non-collated object")
-        return self.collate_len
+        for attr in self.recurse():
+            l = len(getattr(self, attr))
+            if l is not None: return l
+        return None
 
+    def __getitem__(self, idx):
+        kwargs = { attr: getattr(self, attr)[idx] for attr in self.recurse() }
+        return type(self)(example=self, **kwargs)
+    
 def collate(batch):
     example = batch[0]
     if isinstance(example, Collatable):
@@ -32,9 +37,7 @@ def collate(batch):
             attr: collate([getattr(obj, attr) for obj in batch])
             for attr in example.recurse()
         }
-        return type(example)(example=example,
-                             collate_len=len(batch),
-                             **kwargs)
+        return type(example)(example=example, **kwargs)
     else:
         return default_collate(batch)
 

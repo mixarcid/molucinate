@@ -17,14 +17,15 @@ class TensorBonds(Collatable):
     data: torch.Tensor
     max_atoms: int
 
-    def __init__(self, cfg=None, mol=None, data=None, example=None, collate_len=None):
-        super().__init__(example, collate_len)
-        if cfg is None:
+    def __init__(self, cfg=None, mol=None, data=None, example=None):
+        super().__init__(example)
+        if cfg is not None:
+            self.max_atoms = cfg.max_atoms
+        if mol is None:
             self.data = data
             if example is not None:
                 self.max_atoms = example.max_atoms
             return
-        self.max_atoms = cfg.max_atoms
         # batch, bond_idx, bond_type
         self.data = torch.zeros((self.get_max_bonds(), NUM_BOND_TYPES))
         self.data[:,BOND_TYPE_HASH['_']] = 1
@@ -107,26 +108,28 @@ class TensorMol(Collatable):
                  atom_types=None,
                  atom_valences=None,
                  bonds=None,
-                 example=None,
-                 collate_len=None):
-        super().__init__(example, collate_len)
-        if cfg is None:
+                 example=None):
+        super().__init__(example)
+        if cfg is not None:
+            sz = get_grid_size(cfg)
+            self.grid_shape = (sz,sz,sz)
+            self.grid_dim = cfg.grid_dim
+        if mol is None:
             self.molgrid = molgrid
             self.kps = kps
             self.kps_1h = kps_1h
             self.atom_types = atom_types
             self.atom_valences = atom_valences
             self.bonds = bonds
+            if example is not None:
+                self.grid_dim = example.grid_dim
             return
         TensorMol.ensure_grid_coords(cfg)
         tmb = TensorMolBasic(cfg, mol)
         self.atom_types = tmb.atom_types
         self.atom_valences = tmb.atom_valences
         self.bonds = tmb.bonds
-
-        sz = get_grid_size(cfg)
-        self.grid_shape = (sz,sz,sz)
-        self.grid_dim = cfg.grid_dim
+        
         # batch, atom_idx, width, height, depth
         kp_shape = (cfg.max_atoms, sz, sz, sz)
         self.kps = torch.zeros(kp_shape)
