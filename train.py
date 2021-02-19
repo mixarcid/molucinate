@@ -4,6 +4,9 @@ import torch
 import pytorch_lightning as pl
 from pytorch_lightning.loggers.neptune import NeptuneLogger
 
+from rdkit import RDLogger
+RDLogger.DisableLog('rdApp.*')
+
 from data.tensor_mol import TMCfg
 from data.mol_callback import MolCallback
 from data.dataloader import DataLoader

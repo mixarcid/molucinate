@@ -4,7 +4,8 @@ num_workers: 8
 stop_at: null
 
 zinc_dir: "/home/boris/Data/Zinc/"
-zinc_filtered_list: "/home/boris/Data/Zinc/files_filtered_both.txt"
+zinc_file_list: "/home/boris/Data/Zinc/files.txt"
+zinc_filtered_list: "/home/boris/Data/Zinc/files_filtered_mol.txt"
 
 results_path: "/home/boris/Data/mol-results/"
 
