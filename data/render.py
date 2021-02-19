@@ -7,8 +7,10 @@ import numpy as np
 import torch
 try:
     from .chem import *
+    from .tensor_mol import TMCfg
 except ImportError:
     from chem import *
+    from tensor_mol import TMCfg
 
 should_egl = True
 try:
@@ -21,7 +23,7 @@ if should_egl:
 
 def get_molgrid_meshes(tmol, alpha, thresh):
     molgrid = tmol.molgrid.cpu().numpy()
-    grid_dims = np.array([tmol.grid_dim, tmol.grid_dim, tmol.grid_dim])
+    grid_dims = np.array([TMCfg.grid_dim, TMCfg.grid_dim, TMCfg.grid_dim])
     meshes = []
     for atom in ATOM_TYPE_LIST:
         if atom == ATOM_TYPE_HASH['_']: continue
@@ -87,9 +89,10 @@ def test_molgrid():
         'max_atoms': 38,
         'max_valence': 6
     })
+    TMCfg.set_cfg(cfg)
     mol = Chem.MolFromMol2File('test_data/zinc100001.mol2')
     print(Chem.MolToSmiles(mol))
-    tm = TensorMol(cfg, mol)
+    tm = TensorMol(mol)
     render_molgrid_rt(tm)
     
 if __name__ == "__main__":

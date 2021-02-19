@@ -4,6 +4,7 @@ import torch
 import pytorch_lightning as pl
 from pytorch_lightning.loggers.neptune import NeptuneLogger
 
+from data.tensor_mol import TMCfg
 from data.mol_callback import MolCallback
 from data.dataloader import DataLoader
 from data.make_dataset import make_dataset
@@ -27,6 +28,9 @@ def get_params(cfg):
 
 @hydra.main(config_path='cfg', config_name="config")
 def train(cfg):
+
+    TMCfg.set_cfg(cfg.data)
+    
     is_test = cfg.platform.stop_at is not None
     n_workers = 0 if is_test else cfg.platform.num_workers
 

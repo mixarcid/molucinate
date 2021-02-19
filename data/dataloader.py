@@ -3,9 +3,6 @@ import torch.utils.data
 from torch.utils.data.dataloader import default_collate
 
 class Collatable:
-
-    def __init__(self, example=None):
-        pass
     
     def recurse(self):
         for attr in dir(self):
@@ -18,7 +15,7 @@ class Collatable:
             attr: getattr(self, attr).to(device)
             for attr in self.recurse()
         }
-        return type(self)(example=self, **kwargs)
+        return type(self)(**kwargs)
 
     def __len__(self):
         for attr in self.recurse():
@@ -28,7 +25,7 @@ class Collatable:
 
     def __getitem__(self, idx):
         kwargs = { attr: getattr(self, attr)[idx] for attr in self.recurse() }
-        return type(self)(example=self, **kwargs)
+        return type(self)(**kwargs)
     
 def collate(batch):
     example = batch[0]
@@ -37,7 +34,7 @@ def collate(batch):
             attr: collate([getattr(obj, attr) for obj in batch])
             for attr in example.recurse()
         }
-        return type(example)(example=example, **kwargs)
+        return type(example)(**kwargs)
     else:
         return default_collate(batch)
 

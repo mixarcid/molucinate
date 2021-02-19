@@ -47,6 +47,7 @@ class MolCallback(Callback):
             with torch.no_grad():
                 for i, batch in enumerate(val_data):
                     self.cb_batch(trainer.model, i, batch, trainer)
+                    break
         finally:
             trainer.model.train()
     

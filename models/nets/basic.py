@@ -5,15 +5,15 @@ from .nn_utils import *
 
 import sys
 sys.path.insert(0, '../..')
-from data.tensor_mol import TensorMol
+from data.tensor_mol import TensorMol, TMCfg
 from data.chem import *
 from data.utils import *
 
-def get_final_width(filter_list, gcfg):
-    return int(get_grid_size(gcfg.data)/(2**(len(filter_list)-1)))
+def get_final_width(filter_list):
+    return int(TMCfg.grid_size/(2**(len(filter_list)-1)))
 
-def get_linear_mul(filter_list, gcfg):
-    final_width = get_final_width(filter_list, gcfg)
+def get_linear_mul(filter_list):
+    final_width = get_final_width(filter_list)
     return (final_width**3)
 
 class BasicEncoder(nn.Module):
@@ -33,7 +33,7 @@ class BasicEncoder(nn.Module):
                 conv3(filt, filter_list[i+1]),
                 downsample()
             ))
-        mul = get_linear_mul(filter_list, gcfg)
+        mul = get_linear_mul(filter_list)
         self.fc = nn.Sequential(
             Flatten(),
             nn.Linear(mul*filter_list[-1], hidden_size, bias=False),
@@ -50,7 +50,6 @@ class BasicDecoder(nn.Module):
 
     def __init__(self, latent_size, cfg, gcfg):
         super(BasicDecoder, self).__init__()
-        self.data_cfg = gcfg.data
         filter_list = [
             cfg.init_filters*8,
             cfg.init_filters*4,
@@ -58,8 +57,8 @@ class BasicDecoder(nn.Module):
             cfg.init_filters,
             cfg.init_filters
         ]
-        width = get_final_width(filter_list, gcfg)
-        mul = get_linear_mul(filter_list, gcfg)
+        width = get_final_width(filter_list)
+        mul = get_linear_mul(filter_list)
         self.fc = nn.Sequential(
             nn.Linear(latent_size, filter_list[0]*mul),
             nn.LeakyReLU(LEAK_VALUE),
@@ -80,4 +79,4 @@ class BasicDecoder(nn.Module):
         for conv in self.convs:
             x = conv(x)
         x = self.final_conv(x)
-        return TensorMol(self.data_cfg, molgrid=x)
+        return TensorMol(molgrid=x)
