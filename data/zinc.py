@@ -18,7 +18,7 @@ class ZincDataset(data.Dataset):
         self.zinc_dir = cfg.platform.zinc_dir
         if cfg.platform.stop_at is not None:
             self.num_train = min(cfg.platform.stop_at, self.num_train)
-            self.is_train = True
+            #self.is_train = True
 
     def __len__(self):
         if self.is_train:
@@ -41,7 +41,8 @@ def main(cfg):
     dataset = ZincDataset(cfg, False)
     print(len(dataset))
     for i, tmol in enumerate(dataset):
-        render_molgrid_rt(tmol)
+        pass
+        #render_molgrid_rt(tmol)
     
 if __name__ == "__main__":
     from render import *
