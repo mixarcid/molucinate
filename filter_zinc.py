@@ -14,7 +14,7 @@ def main(cfg):
     TMCfg.set_cfg(cfg.data)
     with open(cfg.platform.zinc_filtered_list, "w") as f:
         with open(cfg.platform.zinc_file_list, "r") as zinc_list:
-            for line in tqdm(zinc_list.readlines()):
+            for line in tqdm(zinc_list.readlines()[:10000]):
                 fname, smiles = line.strip().split("\t")
                 try:
                     mol = Chem.MolFromMol2File(cfg.platform.zinc_dir + fname)

@@ -10,7 +10,7 @@ class MolCallback(Callback):
         super(MolCallback, self).__init__()
         self.name = gcfg.name
         self.cb_n_batches = gcfg.platform.cb_n_batches
-        self.batch_size = gcfg.batch_size
+        self.batch_size = 2#gcfg.batch_size
         self.latent_size = gcfg.model.latent_size
         self.results_path = gcfg.platform.results_path
         self.n = 0

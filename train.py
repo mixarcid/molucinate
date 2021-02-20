@@ -41,7 +41,7 @@ def train(cfg):
     test_d = make_dataset(cfg, False)
 
     train_loader = DataLoader(train_d, batch_size=cfg.batch_size, num_workers=n_workers, pin_memory=True, shuffle=True)
-    test_loader = DataLoader(test_d, batch_size=cfg.batch_size, num_workers=n_workers, pin_memory=True, shuffle=True)
+    test_loader = DataLoader(test_d, batch_size=2, num_workers=n_workers, pin_memory=True, shuffle=True)
 
     model = make_model(cfg)
 
@@ -61,7 +61,8 @@ def train(cfg):
     trainer = pl.Trainer(gpus=int(torch.cuda.is_available()),
                          checkpoint_callback=checkpoint_callback,
                          callbacks = [mol_cb],
-                         logger=logger)
+                         logger=logger,
+                         gradient_clip_val=cfg.grad_clip)
     trainer.fit(model, train_loader, test_loader)
     
 if __name__ == '__main__':

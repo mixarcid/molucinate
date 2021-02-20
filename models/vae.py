@@ -8,6 +8,7 @@ class VAE(pl.LightningModule):
 
     def __init__(self, cfg, gcfg):
         super(VAE, self).__init__()
+        self.should_reparam = (cfg.loss.kl_lambda > 0)
         self.optim_name = cfg.optimizer
         self.learn_rate = cfg.learn_rate
         self.loss_cfg = cfg.loss
@@ -29,7 +30,7 @@ class VAE(pl.LightningModule):
         return self.decoder(z)
 
     def reparameterize(self, mu, logvar):
-        if self.training:
+        if self.training and self.should_reparam:
             std = torch.exp(0.5 * logvar)
             eps = torch.randn_like(std)
             return eps.mul(std).add_(mu)
