@@ -21,7 +21,7 @@ class BasicEncoder(nn.Module):
     def __init__(self, hidden_size, cfg, gcfg):
         super(BasicEncoder, self).__init__()
         filter_list = [
-            NUM_ATOM_TYPES,
+            TMCfg.max_atoms,
             cfg.init_filters,
             cfg.init_filters*2,
             cfg.init_filters*4,
@@ -41,7 +41,7 @@ class BasicEncoder(nn.Module):
         )
 
     def forward(self, tmol):
-        x = tmol.molgrid
+        x = tmol.kps
         for conv in self.convs:
             x = conv(x)
         return self.fc(x)

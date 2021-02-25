@@ -9,4 +9,4 @@ zinc_filtered_list: "/home/boris/Data/Zinc/files_filtered_mol.txt"
 
 results_path: "/home/boris/Data/mol-results/"
 
-cb_n_batches: 1
+cb_n_batches: 50
