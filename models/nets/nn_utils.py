@@ -1,6 +1,10 @@
 import torch
 import torch.nn as nn
 
+import sys
+sys.path.insert(0, '../..')
+from data.tensor_mol import TMCfg
+
 LEAK_VALUE = 0.1
 
 class Flatten(nn.Module):
@@ -15,6 +19,13 @@ class Unflatten(nn.Module):
 
     def forward(self, input):
         return input.view(input.size(0), *self.shape)
+
+def linear(in_f, out_f):
+    return nn.Sequential(
+        nn.Linear(in_f, out_f, bias=False),
+        nn.BatchNorm1d(out_f),
+        nn.LeakyReLU(LEAK_VALUE)
+    )
 
 def conv3(in_f, out_f):
     return nn.Sequential(
@@ -39,3 +50,10 @@ def upsample(in_f, out_f):
         nn.BatchNorm3d(out_f),
         nn.LeakyReLU(LEAK_VALUE)
     )
+
+def get_final_width(filter_list):
+    return int(TMCfg.grid_size/(2**(len(filter_list)-1)))
+
+def get_linear_mul(filter_list):
+    final_width = get_final_width(filter_list)
+    return (final_width**3)

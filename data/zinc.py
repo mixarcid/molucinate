@@ -16,8 +16,8 @@ class ZincDataset(data.Dataset):
         self.is_train = is_train
         self.num_train = int(len(self.files)*TT_SPLIT)
         self.zinc_dir = cfg.platform.zinc_dir
-        if cfg.platform.stop_at is not None:
-            self.num_train = min(cfg.platform.stop_at, self.num_train)
+        if cfg.debug.stop_at is not None:
+            self.num_train = min(cfg.debug.stop_at, self.num_train)
             #self.is_train = True
 
     def __len__(self):

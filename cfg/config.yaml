@@ -1,4 +1,8 @@
-name: kp2mg
+name: kp2mg_atypes
+
+debug:
+  cb_n_batches: 50
+  stop_at: null
 
 data:
   grid_dim: 16
@@ -13,7 +17,7 @@ model:
   latent_size: 512
   hidden_size: 1024
   net:
-    name: basic
+    name: kp_rnn
     init_filters: 32
   loss:
     kl_lambda: 1.0

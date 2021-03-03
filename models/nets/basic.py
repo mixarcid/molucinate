@@ -9,13 +9,6 @@ from data.tensor_mol import TensorMol, TMCfg
 from data.chem import *
 from data.utils import *
 
-def get_final_width(filter_list):
-    return int(TMCfg.grid_size/(2**(len(filter_list)-1)))
-
-def get_linear_mul(filter_list):
-    final_width = get_final_width(filter_list)
-    return (final_width**3)
-
 class BasicEncoder(nn.Module):
     
     def __init__(self, hidden_size, cfg, gcfg):

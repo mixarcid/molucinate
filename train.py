@@ -34,7 +34,7 @@ def train(cfg):
 
     TMCfg.set_cfg(cfg.data)
     
-    is_test = cfg.platform.stop_at is not None
+    is_test = cfg.debug.stop_at is not None
     n_workers = 0 if is_test else cfg.platform.num_workers
 
     train_d = make_dataset(cfg, True)
