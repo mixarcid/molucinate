@@ -3,6 +3,8 @@ from omegaconf import OmegaConf
 import torch
 import pytorch_lightning as pl
 from pytorch_lightning.loggers.neptune import NeptuneLogger
+from torchviz import make_dot
+import os
 
 from rdkit import RDLogger
 RDLogger.DisableLog('rdApp.*')
@@ -25,7 +27,8 @@ def flatten_dict(params):
 
 def get_params(cfg):
     params = OmegaConf.to_container(cfg, True)
-    del params["platform"]
+    for key in ["debug", "platform"]:
+        del params[key]
     params = flatten_dict(params)
     return params
 
@@ -34,7 +37,7 @@ def train(cfg):
 
     TMCfg.set_cfg(cfg.data)
     
-    is_test = cfg.debug.stop_at is not None
+    is_test = (cfg.debug.stop_at is not None) or cfg.debug.save_img
     n_workers = 0 if is_test else cfg.platform.num_workers
 
     train_d = make_dataset(cfg, True)
@@ -55,6 +58,16 @@ def train(cfg):
                                experiment_name=cfg.name,
                                params=params,
                                tags=tags)
+
+    if cfg.debug.save_img:
+        batch = next(iter(train_loader))
+        mu, logvar = model(batch)
+        y = model.decode(mu)
+        dot = make_dot(y.molgrid)
+        out_fname = 'model.pdf'
+        print(os.path.abspath(out_fname))
+        f = dot.render('.'.join(out_fname.split('.')[:-1]), format='pdf')
+        return
 
     checkpoint_callback = None
     mol_cb = MolCallback(cfg)

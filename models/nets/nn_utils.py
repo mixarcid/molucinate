@@ -51,8 +51,11 @@ def upsample(in_f, out_f):
         nn.LeakyReLU(LEAK_VALUE)
     )
 
+def get_final_width_len(length):
+    return int(TMCfg.grid_size/(2**(length-1)))
+
 def get_final_width(filter_list):
-    return int(TMCfg.grid_size/(2**(len(filter_list)-1)))
+    return get_final_width_len(len(filter_list))
 
 def get_linear_mul(filter_list):
     final_width = get_final_width(filter_list)

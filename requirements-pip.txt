@@ -7,3 +7,4 @@ neptune-client
 psutil
 pytorch_lightning
 opencv-python
+torchviz
