@@ -49,7 +49,10 @@ class MsConv(nn.Module):
         for i, conv in enumerate(self.in_convs):
             in_grids.append(grid)
             if aux_grids is not None:
-                grid = torch.cat((grid, aux_grids[i]), 1)
+                if grid is None:
+                    grid = aux_grids[i]
+                else:
+                    grid = torch.cat((grid, aux_grids[i]), 1)
             grid = conv(grid)
         fgrid = self.flatten(grid)
         hidden = torch.cat((fgrid, flat), 1)

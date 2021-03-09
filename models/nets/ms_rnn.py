@@ -13,7 +13,7 @@ class MsRnn(nn.Module):
 
     def __init__(self,
                  in_filter_list,
-                 out_filter_list,
+                 dec_filter_list,
                  hid_flat_size,
                  ih_conv_size,
                  ih_flat_size,
@@ -21,16 +21,16 @@ class MsRnn(nn.Module):
         super().__init__()
 
         self.filt_len = len(in_filter_list)
-        self.filt_len_diff = len(in_filter_list) - len(out_filter_list)
+        self.filt_len_diff = len(in_filter_list) - len(dec_filter_list)
 
         self.init_hid_convs = nn.ParameterList()
-        aux_filter_list = []
+        self.out_filter_list = []
         for i, filt in enumerate(in_filter_list):
             if i < self.filt_len_diff:
                 hid_size = filt
             else:
-                hid_size = out_filter_list[self.filt_len_diff - i]
-            aux_filter_list.append(hid_size)
+                hid_size = dec_filter_list[self.filt_len_diff - i]
+            self.out_filter_list.append(hid_size)
             sz = get_final_width_len(i+1)
             hid_shape = (hid_size, sz, sz, sz)
             self.init_hid_convs.append(nn.Parameter(torch.zeros(hid_shape)))
@@ -38,11 +38,11 @@ class MsRnn(nn.Module):
         self.init_hid_flat = nn.Parameter(torch.zeros(hid_flat_size))
         self.init_conv = conv3(1, ih_conv_size)
         self.init_flat = linear(i_flat_size, ih_flat_size)
-        self.ms_conv = MsConv(in_filter_list,
-                              out_filter_list,
-                              ih_flat_size + hid_flat_size,
-                              hid_flat_size,
-                              aux_filter_list)
+        self.rnn = MsConv(in_filter_list,
+                          dec_filter_list,
+                          ih_flat_size + hid_flat_size,
+                          hid_flat_size,
+                          self.out_filter_list)
 
 
     def forward(self, grid, flat):
@@ -56,10 +56,10 @@ class MsRnn(nn.Module):
             grid_in = self.init_conv(grid[:,i:i+1])
             flat_in1 = self.init_flat(flat[:,i])
             flat_in = torch.cat((hid_flat, flat_in1), 1)
-            _, hid_flat, in_grids, out_grids = self.ms_conv(grid_in, flat_in, hid_convs)
+            _, hid_flat, in_grids, out_grids = self.rnn(grid_in, flat_in, hid_convs)
             hid_convs = in_grids
             for i, out_grid in enumerate(out_grids):
                 hid_convs[-i-1] = out_grid
             
-        return hid_flat
+        return hid_flat, hid_convs
             

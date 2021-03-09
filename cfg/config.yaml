@@ -16,7 +16,7 @@ model:
   optimizer: adam
   learn_rate: 1e-4
   latent_size: 512
-  hidden_size: 1024
+  hidden_size: 512
   net:
     name: kp_rnn
     init_filters: 2

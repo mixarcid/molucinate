@@ -14,11 +14,21 @@ class KpRnnEncoder(nn.Module):
 
     def __init__(self, hidden_size, cfg, gcfg):
         super().__init__()
-        filter_list = [
+        hid_filter_list = [
             cfg.init_filters,
             cfg.init_filters*2,
             cfg.init_filters*4,
+            cfg.init_filters*8,
+            cfg.init_filters*8,
             cfg.init_filters*8
+        ]
+        enc_filter_list = [
+            0,
+            32,
+            64,
+            64,
+            128,
+            128
         ]
         flat_in_size = NUM_ATOM_TYPES
         """self.init_flat = Flatten()
@@ -27,12 +37,20 @@ class KpRnnEncoder(nn.Module):
                               1,
                               flat_in_size,
                               hidden_size)"""
-        self.ms_rnn = MsRnn(filter_list,
+        ih_flat_size = 32
+        hid_flat_size = 64
+        self.ms_rnn = MsRnn(hid_filter_list,
                             [],
-                            hidden_size,
+                            hid_flat_size,
                             cfg.init_filters,
-                            512,
+                            ih_flat_size,
                             flat_in_size)
+        self.out = MsConv(enc_filter_list,
+                          [],
+                          hid_flat_size,
+                          hidden_size,
+                          self.ms_rnn.out_filter_list)
+                          
 
     def forward(self, tmol):
         x_grid = tmol.kps
@@ -40,4 +58,6 @@ class KpRnnEncoder(nn.Module):
         out_grid, out_flat = self.ms_conv(x_grid, x_flat)
         return out_flat"""
         x_flat = tmol.atom_types
-        return self.ms_rnn(x_grid, x_flat)
+        hid_flat, hid_convs =  self.ms_rnn(x_grid, x_flat)
+        grid, out, in_grids, out_grids = self.out(None, hid_flat, hid_convs)
+        return out
