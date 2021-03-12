@@ -1,7 +1,7 @@
 import numpy as np
 from rdkit import Chem
 
-ATOM_TYPE_LIST = [ '_', 'C', 'O', 'N', 'H', 'P', 'Cl', 'F', 'Br', 'S', 'I' ]
+ATOM_TYPE_LIST = [ '_', '^', 'C', 'O', 'N', 'H', 'P', 'Cl', 'F', 'Br', 'S', 'I' ]
 ATOM_TYPE_HASH = { atom: i for i, atom in enumerate(ATOM_TYPE_LIST) }
 NUM_ATOM_TYPES = len(ATOM_TYPE_LIST)
 

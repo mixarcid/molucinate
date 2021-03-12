@@ -67,7 +67,7 @@ class BasicDecoder(nn.Module):
         self.final_conv = nn.Conv3d(filter_list[-1], NUM_ATOM_TYPES,
                                     kernel_size=1, bias=True)
 
-    def forward(self, x):
+    def forward(self, x, og_x):
         x = self.fc(x)
         for conv in self.convs:
             x = conv(x)

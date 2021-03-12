@@ -18,8 +18,11 @@ model:
   latent_size: 512
   hidden_size: 512
   net:
-    name: kp_rnn
+    name: atom_rnn
     init_filters: 2
+    num_gru_layers: 2
+    gru_hidden_size: 512
+    gru_embed_size: 64
   loss:
     kl_lambda: 0.001
     l2_lambda: 1.0

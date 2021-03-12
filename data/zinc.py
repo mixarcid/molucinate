@@ -41,8 +41,8 @@ def main(cfg):
     dataset = ZincDataset(cfg, False)
     print(len(dataset))
     for i, tmol in enumerate(dataset):
-        pass
-        #render_molgrid_rt(tmol)
+        #print(tmol.atom_str())
+        render_molgrid_rt(tmol)
     
 if __name__ == "__main__":
     from render import *

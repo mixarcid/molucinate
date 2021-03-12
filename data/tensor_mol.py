@@ -75,15 +75,13 @@ class TensorMolBasic:
         # batch, atom_idx, dimension
         self.coords = torch.zeros((TMCfg.max_atoms, 3))
         # batch, atom_idx, atom_type
-        self.atom_types = torch.zeros((TMCfg.max_atoms, NUM_ATOM_TYPES))
-        self.atom_types[:,ATOM_TYPE_HASH['_']] = 1
+        self.atom_types = torch.zeros(TMCfg.max_atoms, dtype=torch.long)
         # batch, atom_idx, atom_valence
         self.atom_valences = torch.zeros((TMCfg.max_atoms, TMCfg.max_valence+1))
 
         for i, atom in enumerate(mol.GetAtoms()):
             atom_type = ATOM_TYPE_HASH[atom.GetSymbol()]
-            self.atom_types[i,atom_type] = 1
-            self.atom_types[i,ATOM_TYPE_HASH['_']] = 0
+            self.atom_types[i] = atom_type
             pos = mol.GetConformer().GetAtomPosition(i)
             self.coords[i] = torch.tensor([ pos.x, pos.y, pos.z ])
         self.center_coords()
@@ -148,7 +146,6 @@ class TensorMol(Collatable):
         self.molgrid = torch.zeros((NUM_ATOM_TYPES, sz, sz, sz))
 
         for i, (coord, atom) in enumerate(zip(tmb.coords, self.atom_types)):
-            atom = torch.argmax(atom).item()
             if atom == ATOM_TYPE_HASH['_']: break
             grid = self.gridify_atom(coord, atom)
             self.kps[i] = grid
@@ -172,6 +169,12 @@ class TensorMol(Collatable):
             A1_mask = np.logical_and(r <= dists, dists < 1.5*r)
             A = A0*A0_mask + A1*A1_mask
         return torch.tensor(A)
+
+    def atom_str(self):
+        ret = ''
+        for atom in self.atom_types:
+            ret += ATOM_TYPE_LIST[atom]
+        return ret
 
 
 def test_basic():

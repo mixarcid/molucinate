@@ -26,7 +26,7 @@ def get_molgrid_meshes(tmol, alpha, thresh):
     grid_dims = np.array([TMCfg.grid_dim, TMCfg.grid_dim, TMCfg.grid_dim])
     meshes = []
     for atom in ATOM_TYPE_LIST:
-        if atom == '_': continue
+        if atom in '_^': continue
         atoms = molgrid[ATOM_TYPE_HASH[atom]] > thresh
         smoothed = atoms#mcubes.smooth(atoms)
         vertices, triangles = mcubes.marching_cubes(smoothed, 0)

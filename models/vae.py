@@ -26,8 +26,8 @@ class VAE(pl.LightningModule):
         mu, logvar = self.fc1(h), self.fc2(h)
         return mu, logvar
 
-    def decode(self, z):
-        return self.decoder(z)
+    def decode(self, z, tmol=None):
+        return self.decoder(z, tmol)
 
     def reparameterize(self, mu, logvar):
         if self.training and self.should_reparam:
@@ -43,7 +43,7 @@ class VAE(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         mu, logvar = self(batch)
         z = self.reparameterize(mu, logvar)
-        recon = self.decode(z)
+        recon = self.decode(z, batch)
         loss, terms = self.loss_fn(recon, batch, mu, logvar)
         self.log('train_loss', loss, prog_bar=True)
         for name, term in terms.items():
