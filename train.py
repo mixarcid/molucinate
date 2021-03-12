@@ -1,4 +1,5 @@
 import hydra
+from collections import defaultdict
 from omegaconf import OmegaConf
 import torch
 import pytorch_lightning as pl
@@ -15,12 +16,27 @@ from data.dataloader import DataLoader
 from data.make_dataset import make_dataset
 from models.make_model import make_model
 
-def flatten_dict(params):
+def count_keys(params):
+    ret = defaultdict(int)
+    for key, value in params.items():
+        if isinstance(value, dict):
+            for key2, count in count_keys(value).items():
+                ret[key2] += count
+        else:
+            ret[key] += 1
+    return ret
+
+def flatten_dict(params, key_counts=None):
+    if key_counts is None:
+        key_counts = count_keys(params)
     ret = {}
     for key, value in params.items():
         if isinstance(value, dict):
             for key2, val2 in flatten_dict(value).items():
-                ret[f"{key}.{key2}"] = val2
+                if key_counts[key2] == 1 and not '.' in key2:
+                    ret[key2] = val2
+                else:
+                    ret[f"{key}.{key2}"] = val2
         else:
             ret[key] = value
     return ret
@@ -53,6 +69,9 @@ def train(cfg):
 
     if is_test:
         logger = None
+        print("Neptune logging disabled. The parameters are:")
+        for key, val in params.items():
+            print(f"\t{key}: {val}")
     else:
         logger = NeptuneLogger(project_name="mixarcid/molucinate",
                                experiment_name=cfg.name,
