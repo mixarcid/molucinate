@@ -1,18 +1,26 @@
 import torch
 from torch.nn import functional as F
 
-def kl_loss(mu, logvar):
+def kl_loss(recon, x, mu, logvar):
     return -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
 
-def vae_loss(recon, x, mu, logvar, cfg):
-    kl = kl_loss(mu, logvar)
-    l2 = ((recon.molgrid-x.molgrid)**2).mean()
+def l2_loss(recon, x, mu, logvar):
+    return ((recon.molgrid-x.molgrid)**2).mean()
+
+def combine_losses(loss_fns, cfg, *args):
     ret = 0
     terms = {}
-    if cfg.kl_lambda:
-        ret += kl*cfg.kl_lambda
-        terms['kl'] = kl
-    if cfg.l2_lambda:
-        ret += l2*cfg.l2_lambda
-        terms['l2'] = l2
+    for fn in loss_fns:
+        loss = fn(*args)
+        name = fn.__name__.split('_')[0]
+        lam = getattr(cfg, name + "_lambda")
+        if lam:
+            ret += lam*loss
+            terms[name] = loss
     return ret, terms
+
+def get_loss_fn(model_name, cfg):
+    loss_fns = {
+        'vae': [ kl_loss, l2_loss ]
+    }[model_name]
+    return lambda *args: combine_losses(loss_fns, cfg, *args)
