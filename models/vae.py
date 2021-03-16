@@ -22,12 +22,12 @@ class VAE(pl.LightningModule):
         self.loss_fn = get_loss_fn('vae', cfg.loss)
 
     def encode(self, tmol):
-        h = self.encoder(tmol)
+        h = self.encoder(tmol, self.device)
         mu, logvar = self.fc1(h), self.fc2(h)
         return mu, logvar
 
     def decode(self, z, tmol=None):
-        return self.decoder(z, tmol)
+        return self.decoder(z, tmol, self.device)
 
     def reparameterize(self, mu, logvar):
         if self.training and self.should_reparam:
@@ -67,7 +67,7 @@ class VAE(pl.LightningModule):
     def shared_eval(self, batch, batch_idx, prefix):
         mu, logvar = self(batch)
         z = self.reparameterize(mu, logvar)
-        recon = self.decode(z)
+        recon = self.decode(z, batch)
         loss, terms = self.loss_fn(recon, batch, mu, logvar)
         self.log(f'{prefix}_loss', loss, prog_bar=True)
         for name, term in terms.items():
