@@ -31,9 +31,9 @@ class MolCallback(Callback):
         gen = model.decode(z)
         for i in range(self.batch_size):
             if i > 0: break
-            gen_mg_img = render_molgrid(gen[i])
-            mg_img = render_molgrid(batch[i])
-            recon_mg_img = render_molgrid(recon[i])
+            gen_mg_img = render_tmol(gen[i])
+            mg_img = render_tmol(batch[i], recon[i])
+            recon_mg_img = render_tmol(recon[i])
             fname = "{}_epoch_{}_{}".format(self.name,
                                             trainer.current_epoch,
                                             batch_idx*self.batch_size+i)

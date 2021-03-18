@@ -152,7 +152,6 @@ class TensorMol(Collatable):
             self.kps_1h[i] = self.gridify_atom(coord, atom, True)
             self.molgrid[atom] += grid
 
-
     def gridify_atom(self, coord, atom, should_1h=False):
         #compute distances to each atom
         dists = np.linalg.norm(TMCfg.grid_coords - coord.cpu().numpy(), axis=-1)
@@ -169,6 +168,21 @@ class TensorMol(Collatable):
             A1_mask = np.logical_and(r <= dists, dists < 1.5*r)
             A = A0*A0_mask + A1*A1_mask
         return torch.tensor(A)
+
+    def argmax(self):
+        if self.atom_types.dtype != torch.long:
+            atom_types = torch.argmax(self.atom_types, -1)
+            return TensorMol(
+                 self.mol,
+                 self.molgrid,
+                 self.kps,
+                 self.kps_1h,
+                 atom_types,
+                 self.atom_valences,
+                 self.bonds
+            )
+        else:
+            return self
 
     def atom_str(self):
         ret = ''

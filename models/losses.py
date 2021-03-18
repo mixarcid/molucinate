@@ -17,7 +17,7 @@ def atom_ce_loss(recon, x, mu, logvar):
     return F.cross_entropy(
         recon[:, :-1].contiguous().view(-1, recon.size(-1)),
         x[:, 1:].contiguous().view(-1),
-        ignore_index=ATOM_TYPE_HASH["_"]
+        #ignore_index=ATOM_TYPE_HASH["_"]
     )
 
 def combine_losses(loss_fns, cfg, *args):
