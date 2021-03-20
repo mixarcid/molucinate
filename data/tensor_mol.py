@@ -184,6 +184,13 @@ class TensorMol(Collatable):
         else:
             return self
 
+    def get_coords(self):
+        coords = []
+        for kp in self.kps:
+            index = np.unravel_index(torch.argmax(kp), kp.shape)
+            coords.append(TMCfg.grid_coords[index[0], index[1], index[2]])
+        return torch.tensor(coords)
+
     def atom_str(self):
         ret = ''
         for atom in self.atom_types:

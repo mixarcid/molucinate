@@ -39,10 +39,67 @@ def get_molgrid_meshes(tmol, alpha, thresh):
             meshes.append(pyrender.Mesh.from_trimesh(mesh))
     return meshes
 
+
+def transform_coords(coords):
+    grid_dims = [TMCfg.grid_dim]*3
+    return coords - np.array([0, 0, grid_dims[-1]])
+
+def make_bond_cyl(coord1, coord2, bond_type, meshes):
+    alpha = 255
+    coord1 = coord1.detach().cpu().numpy()
+    coord2 = coord2.detach().cpu().numpy()
+    diff = coord1 - coord2
+
+    diff = diff/np.linalg.norm(diff)
+    if diff[0] == 0:
+        offset = np.cross(diff, [1, 0, 0])
+    else:
+        offset = np.cross(diff, [0, 1, 0])
+    offset = offset/np.linalg.norm(offset)
+    if bond_type == 1:
+        dists = [0.0]
+    else:
+        dists = np.linspace(-0.2, 0.2, bond_type)
+    for k in range(bond_type):
+        start = transform_coords(coord1 + offset*dists[k])
+        end = transform_coords(coord2 + offset*dists[k])
+        sm = trimesh.creation.cylinder(radius=0.1, segment=[start, end])
+        color = np.array([127,127,127,alpha])
+        sm.visual.vertex_colors = color
+        meshes.append(pyrender.Mesh.from_trimesh(sm))
+
+def get_kp_meshes(tmol):
+
+    coords = tmol.get_coords()
+    meshes = []
+    alpha = 255
+    for i, enc in enumerate(tmol.atom_types):
+        if enc in [ATOM_TYPE_HASH['_'], ATOM_TYPE_HASH['^']]:
+            continue
+        sm = trimesh.creation.uv_sphere(radius=ATOM_RADII_LIST[enc]/4)
+        color = np.array([0,0,0,alpha])
+        color[:-1] = ATOM_COLORS[ATOM_TYPE_LIST[enc]]
+        sm.visual.vertex_colors = color
+        tfs = np.tile(np.eye(4), (1, 1, 1))
+        tfs[:,:3,3] = transform_coords(coords[i])
+        meshes.append(pyrender.Mesh.from_trimesh(sm, poses=tfs))
+        if i > 0:
+            make_bond_cyl(coords[i], coords[i-1], 1, meshes)
+        
+        
+    return meshes
+
 def get_molgrid_scene(tmol, prot_mg=None, thresh=0.5):
     meshes = get_molgrid_meshes(tmol, 255, thresh)
     if prot_mg is not None:
         meshes += get_molgrid_meshes(prot_mg, 128)
+    scene = pyrender.Scene()
+    for mesh in meshes:
+        scene.add(mesh)
+    return scene
+
+def get_kp_scene(tmol):
+    meshes = get_kp_meshes(tmol)
     scene = pyrender.Scene()
     for mesh in meshes:
         scene.add(mesh)
@@ -67,6 +124,14 @@ def render_molgrid(tmol, prot_mg=None, thresh=0.5, dims=(300,300)):
 
 def render_molgrid_rt(tmol, prot_mg=None):
     scene = get_molgrid_scene(tmol, prot_mg)
+    pyrender.Viewer(scene, use_raymond_lighting=True)
+
+def render_kp(tmol, dims=(300,300)):
+    scene = get_kp_scene(tmol)
+    return scene2img(scene, dims)
+
+def render_kp_rt(tmol, prot_mg=None):
+    scene = get_kp_scene(tmol)
     pyrender.Viewer(scene, use_raymond_lighting=True)
 
 def get_multi(arr):
@@ -110,13 +175,19 @@ def render_tmol(tmol, tmol_template=None, dims=(300,300)):
         imgs.append(render_molgrid(tmol))
     if tmol_template.atom_types is not None:
         imgs.append(render_text(tmola.atom_str(), dims))
-    return get_multi([imgs])
+    return get_multi([[img] for img in imgs])
 
 def test_molgrid():
     mol = Chem.MolFromMol2File('test_data/zinc100001.mol2')
     print(Chem.MolToSmiles(mol))
     tm = TensorMol(mol)
     render_molgrid_rt(tm)
+
+def test_kp():
+    mol = Chem.MolFromMol2File('test_data/zinc100001.mol2')
+    print(Chem.MolToSmiles(mol))
+    tm = TensorMol(mol)
+    render_kp_rt(tm)
 
 def test_render_tmol():
     mol = Chem.MolFromMol2File('test_data/zinc100001.mol2')
@@ -135,4 +206,4 @@ if __name__ == "__main__":
         'max_valence': 6
     })
     TMCfg.set_cfg(cfg)
-    test_render_tmol()
+    test_kp()
