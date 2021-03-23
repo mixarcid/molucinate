@@ -30,7 +30,8 @@ def get_molgrid_meshes(tmol, alpha, thresh):
         atoms = molgrid[ATOM_TYPE_HASH[atom]] > thresh
         smoothed = atoms#mcubes.smooth(atoms)
         vertices, triangles = mcubes.marching_cubes(smoothed, 0)
-        vertices -= grid_dims + np.array([0,0,grid_dims[-1]])
+        vertices *= 0.5
+        vertices -= (grid_dims)*0.5 + np.array([0,0,grid_dims[-1]])
         if len(vertices):
             mesh = trimesh.Trimesh(vertices=vertices, faces=triangles, process=False)
             color = np.array([0,0,0,alpha])
@@ -42,7 +43,8 @@ def get_molgrid_meshes(tmol, alpha, thresh):
 
 def transform_coords(coords):
     grid_dims = [TMCfg.grid_dim]*3
-    return coords - np.array([0, 0, grid_dims[-1]])
+    trans = coords - np.array([0, 0, grid_dims[-1]])
+    return np.array([trans[1], trans[0], trans[2]])
 
 def make_bond_cyl(coord1, coord2, bond_type, meshes):
     alpha = 255
@@ -92,7 +94,7 @@ def get_kp_meshes(tmol):
 def get_molgrid_scene(tmol, prot_mg=None, thresh=0.5):
     meshes = get_molgrid_meshes(tmol, 255, thresh)
     if prot_mg is not None:
-        meshes += get_molgrid_meshes(prot_mg, 128)
+        meshes += get_molgrid_meshes(prot_mg, 128, thresh)
     scene = pyrender.Scene()
     for mesh in meshes:
         scene.add(mesh)
@@ -100,6 +102,7 @@ def get_molgrid_scene(tmol, prot_mg=None, thresh=0.5):
 
 def get_kp_scene(tmol):
     meshes = get_kp_meshes(tmol)
+    #meshes += get_molgrid_meshes(tmol, 128, 0.5)
     scene = pyrender.Scene()
     for mesh in meshes:
         scene.add(mesh)
@@ -174,7 +177,10 @@ def render_tmol(tmol, tmol_template=None, dims=(300,300)):
     if tmol_template.molgrid is not None:
         imgs.append(render_molgrid(tmol))
     if tmol_template.atom_types is not None:
-        imgs.append(render_text(tmola.atom_str(), dims))
+        if tmol_template.kps is not None:
+            imgs.append(render_kp(tmol))
+        else:
+            imgs.append(render_text(tmola.atom_str(), dims))
     return get_multi([[img] for img in imgs])
 
 def test_molgrid():
@@ -206,4 +212,5 @@ if __name__ == "__main__":
         'max_valence': 6
     })
     TMCfg.set_cfg(cfg)
-    test_kp()
+    test_render_tmol()
+    #test_kp()
