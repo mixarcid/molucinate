@@ -34,6 +34,6 @@ def combine_losses(loss_fns, cfg, *args):
 
 def get_loss_fn(model_name, cfg):
     loss_fns = {
-        'vae': [ atom_ce_loss ]
+        'vae': [ atom_ce_loss, l2_loss, kl_loss ]
     }[model_name]
     return lambda *args: combine_losses(loss_fns, cfg, *args)
