@@ -1,4 +1,4 @@
-name: atom_rnn
+name: rnn2mg
 
 debug:
   cb_n_batches: 50
@@ -18,18 +18,18 @@ model:
   latent_size: 512
   hidden_size: 512
   net:
-    name: atom_rnn
+    name: atom_kp_rnn
     init_filters: 2
     num_gru_layers: 1
     gru_hidden_size: 512
     gru_embed_size: 64
   loss:
-    kl_lambda: 0.001
+    kl_lambda: 0.0
     l2_lambda: 1.0
     atom_ce_lambda: 1.0
 
 dataset: zinc
-batch_size: 16
+batch_size: 8
 grad_clip: 0
 
 defaults:
