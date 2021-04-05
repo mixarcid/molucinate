@@ -5,6 +5,7 @@ from .ms_conv import MsConv
 from .ms_rnn import MsRnn
 from .nn_utils import *
 from .conv_gru import *
+from .mg_decoder import MgDecoder
 from .time_distributed import TimeDistributed
 
 import sys
@@ -19,6 +20,13 @@ def get_padded_atypes(tmol, device):
                              dtype=torch.long)
     padded = torch.cat((start_idx, tmol.atom_types), 1)
     return padded
+
+def get_padded_kps(tmol, device):
+    batch_size = tmol.atom_types.shape[0]
+    sz = TMCfg.grid_size
+    start = torch.ones((batch_size, 1, sz, sz, sz), device=device)
+    padded = torch.unsqueeze(torch.cat((start, tmol.kps), 1), 2)
+    return padded
     
 class AtomKpRnnEncoder(nn.Module):
 
@@ -31,7 +39,7 @@ class AtomKpRnnEncoder(nn.Module):
                           num_layers=cfg.num_gru_layers,
                           batch_first=True)
         sz = TMCfg.grid_size
-        filter_list = [4, 8, 16, 32]
+        filter_list = [2, 4, 8, 16, 32]
         self.kp_rnns = nn.ModuleList()
         self.downs = nn.ModuleList()
         for f, f_prev in zip(filter_list, [1] + filter_list):
@@ -43,7 +51,6 @@ class AtomKpRnnEncoder(nn.Module):
                                         batch_first=True))
             self.downs.append(TimeDistributed(nn.Sequential(
                 nn.BatchNorm3d(f),
-                nn.LeakyReLU(LEAK_VALUE),
                 downsample()
             ), axis=2))
             sz //= 2
@@ -82,38 +89,38 @@ class AtomKpRnnDecoder(nn.Module):
             nn.Linear(cfg.gru_hidden_size, NUM_ATOM_TYPES)
         )
 
-        filter_list = [
-            512,
-            256,
-            256,
-            64,
-            32,
-            32,
-        ]
+        
+        filter_list = [32, 32, 16, 8, 4, 2]
         width = get_final_width(filter_list)
         mul = get_linear_mul(filter_list)
-        self.mg_fc = nn.Sequential(
+        self.kp_fc = TimeDistributed(nn.Sequential(
             nn.Linear(latent_size, filter_list[0]*mul),
             nn.LeakyReLU(LEAK_VALUE),
             Unflatten((filter_list[0], width, width, width))
-        )
-        self.mg_convs = nn.ModuleList()
-        for i, filt in enumerate(filter_list[:-1]):
-            filt_next = filter_list[i+1]
-            self.mg_convs.append(nn.Sequential(
-                upsample(filt, filt_next),
-                conv3(filt_next, filt_next)
-            ))
-        self.final_mg_conv = nn.Conv3d(filter_list[-1], NUM_ATOM_TYPES,
-                                    kernel_size=1, bias=True)
+        ), axis=2)
+        self.kp_rnns = nn.ModuleList()
+        self.ups = nn.ModuleList()
+        self.norms = nn.ModuleList()
+        for f, f_next in zip(filter_list, filter_list[1:]):
+            width *= 2
+            self.ups.append(TimeDistributed(upsample(f, f_next), axis=2))
+            self.kp_rnns.append(ConvGRU((width, width, width),
+                                        f_next,
+                                        f_next,
+                                        (3,3,3),
+                                        1,
+                                        batch_first=True))
+        self.final_kp_conv = TimeDistributed(
+            nn.Conv3d(filter_list[-1], 1,
+                      kernel_size=1,
+                      bias=True),
+            axis=2)
+
+        self.mg_decoder = MgDecoder(latent_size, cfg, gcfg)
 
     def get_molgrid(self, z, device):
-        x = self.mg_fc(z)
-        for conv in self.mg_convs:
-            x = conv(x)
-        x = self.final_mg_conv(x)
-        return x
-
+        return self.mg_decoder(z, device)
+    
     def forward(self, z, tmol, device):
         if tmol is None:
             return self.generate(z, device)
@@ -128,8 +135,17 @@ class AtomKpRnnDecoder(nn.Module):
 
         output, _ = self.rnn(x_input, h_0)
         y = self.out_fc(output)
+
+        kp_in_x = get_padded_kps(tmol, device)
+        kp_out = self.kp_fc(z_0)
+        for up, kp_rnn, in zip(self.ups, self.kp_rnns):
+            kp_out = up(kp_out)
+            kp_hidden, _ = kp_rnn(kp_out, device=device)
+            kp_out = kp_hidden[0]
+        kp_out = self.final_kp_conv(kp_out).squeeze()
         
         return TensorMol(atom_types=y[:,1:],
+                         kps_1h=kp_out[:,1:],
                          molgrid=self.get_molgrid(z, device))
 
     def generate(self, z, device):

@@ -51,6 +51,7 @@ def make_bond_cyl(coord1, coord2, bond_type, meshes):
     coord1 = coord1.detach().cpu().numpy()
     coord2 = coord2.detach().cpu().numpy()
     diff = coord1 - coord2
+    if np.all(diff == 0): return
 
     diff = diff/np.linalg.norm(diff)
     if diff[0] == 0:
@@ -175,10 +176,10 @@ def render_tmol(tmol, tmol_template=None, dims=(300,300)):
     tmola = tmol.argmax()
     imgs = []
     if tmol_template.molgrid is not None:
-        imgs.append(render_molgrid(tmol))
+        imgs.append(render_molgrid(tmola))
     if tmol_template.atom_types is not None:
-        if tmol_template.kps is not None:
-            imgs.append(render_kp(tmol))
+        if tmol_template.kps is not None or tmol_template.kps_1h is not None:
+            imgs.append(render_kp(tmola))
         else:
             imgs.append(render_text(tmola.atom_str(), dims))
     return get_multi([[img] for img in imgs])

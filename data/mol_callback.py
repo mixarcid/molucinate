@@ -26,7 +26,8 @@ class MolCallback(Callback):
     def cb_batch(self, model, batch_idx, batch, trainer):
         batch = batch.to(model.device)
         mu, logvar = model(batch)
-        recon = model.decode(mu)
+        #todo: yeet batch
+        recon = model.decode(mu, batch)
         z = self.create_z(model.device)
         gen = model.decode(z)
         for i in range(self.batch_size):

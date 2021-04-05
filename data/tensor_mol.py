@@ -173,7 +173,7 @@ class TensorMol(Collatable):
         if self.atom_types.dtype != torch.long:
             atom_types = torch.argmax(self.atom_types, -1)
             return TensorMol(
-                 self.mol,
+                 None,
                  self.molgrid,
                  self.kps,
                  self.kps_1h,
@@ -186,8 +186,9 @@ class TensorMol(Collatable):
 
     def get_coords(self):
         coords = []
-        for kp in self.kps:
-            index = np.unravel_index(torch.argmax(kp), kp.shape)
+        kps = self.kps if self.kps_1h is None else self.kps_1h
+        for kp in kps:
+            index = np.unravel_index(torch.argmax(kp).cpu().numpy(), kp.shape)
             coords.append(TMCfg.grid_coords[index[0], index[1], index[2]])
         return torch.tensor(coords)
 
