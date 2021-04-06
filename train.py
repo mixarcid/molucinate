@@ -6,6 +6,11 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers.neptune import NeptuneLogger
 from torchviz import make_dot
 import os
+import random
+
+SEED = 49
+torch.manual_seed(SEED)
+random.seed(SEED)
 
 from rdkit import RDLogger
 RDLogger.DisableLog('rdApp.*')
