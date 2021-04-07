@@ -1,4 +1,4 @@
-name: rnn2mg
+name: atn_better_kps
 
 debug:
   cb_n_batches: 50

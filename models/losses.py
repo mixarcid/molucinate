@@ -21,9 +21,10 @@ def atom_ce_loss(recon, x, mu, logvar):
     )
 
 def kp_ce_loss(recon, x, mu, logvar):
-    x = x.kps_1h
+    idxs = x.atom_types != ATOM_TYPE_HASH["_"]
+    x = x.kps_1h[idxs]
     x = torch.argmax(x.contiguous().view(x.size(0), x.size(1), -1), -1)
-    recon = recon.kps_1h
+    recon = recon.kps_1h[idxs]
     return F.cross_entropy(
         recon.contiguous().view(recon.size(0)*recon.size(1), -1),
         x.contiguous().view(-1)

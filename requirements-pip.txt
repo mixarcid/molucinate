@@ -3,7 +3,7 @@ omegaconf
 PyMCubes
 trimesh
 pyrender
-neptune-client
+neptune-client==0.5.0
 psutil
 pytorch_lightning
 opencv-python
