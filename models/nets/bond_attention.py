@@ -24,7 +24,8 @@ def bond_attention_given_btypes(atn_outputs, bonds):
                                  *atn_outputs.shape[3:])
 
 def bond_attention_given(atn_outputs, bonds):
-    out = atn_outputs#torch.zeros_like(atn_outputs)
+    out = torch.zeros_like(atn_outputs)
+    out += atn_outputs
     for batch, start, end, bond in bonds.all_indexes:
         out[batch, end] += atn_outputs[batch, start]
     return out
