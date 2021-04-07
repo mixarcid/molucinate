@@ -50,10 +50,12 @@ class TensorBonds(Collatable):
     def __init__(self, mol=None, data=None):
         if mol is None:
             self.data = data
+            self.all_indexes = self.get_all_indexes()
             return
         # batch, bond_idx, bond_type
         self.data = torch.zeros((TMCfg.max_bonds, NUM_BOND_TYPES))
-        self.data[:,BOND_TYPE_HASH['_']] = 1 
+        self.data[:,BOND_TYPE_HASH['_']] = 1
+        self.all_indexes = self.get_all_indexes()
 
     def add_bond(self, bond):
         start, end = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
@@ -61,6 +63,32 @@ class TensorBonds(Collatable):
         idx = TensorBonds.get_bond_idx(start, end)
         self.data[idx,BOND_TYPE_HASH[bond_type]] = 1
         self.data[idx,BOND_TYPE_HASH['_']] = 0
+
+    def get_bond(self, start, end):
+        if len(self.data.shape) == 2:
+            return self.data[TensorBonds.get_bond_idx(start, end)]
+        elif len(self.data.shape) == 3:
+            return self.data[:, TensorBonds.get_bond_idx(start, end)]
+        else:
+            raise Exception("incorrect number of dims in TensorBonds data")
+
+    def get_bond_argmax(self, start, end):
+        return torch.argmax(self.get_bond(start, end), -1)
+
+    def get_all_indexes(self):
+        out = []
+        for end in range(TMCfg.max_atoms):
+            for start in range(end):
+                bonds = self.get_bond_argmax(start, end)
+                if len(bonds.shape) == 0:
+                    if bonds != BOND_TYPE_HASH['_']:
+                        out.append([start, end, bonds])
+                else:
+                    for batch, bond in enumerate(bonds):
+                        if bond != BOND_TYPE_HASH['_']:
+                            out.append([batch, start, end, bond])
+        return out
+                
 
 # just stores atom coords, atom types, and bonds
 # not used by any model directly, but useful intermediate

@@ -1,12 +1,11 @@
 import torch
 import torch.nn as nn
 
-from .ms_conv import MsConv
-from .ms_rnn import MsRnn
 from .nn_utils import *
 from .conv_gru import *
 from .mg_decoder import MgDecoder
 from .time_distributed import TimeDistributed
+from .bond_attention import *
 
 import sys
 sys.path.insert(0, '../..')
@@ -32,12 +31,17 @@ class AtomKpRnnEncoder(nn.Module):
 
     def __init__(self, hidden_size, cfg, gcfg):
         super().__init__()
-        self.embedding = nn.Embedding(NUM_ATOM_TYPES, cfg.gru_embed_size)
+        atn_sz = 128
         atom_out_sz = 128
-        self.rnn = nn.GRU(cfg.gru_embed_size,
-                          atom_out_sz,
-                          num_layers=cfg.num_gru_layers,
-                          batch_first=True)
+        self.embedding = nn.Embedding(NUM_ATOM_TYPES, cfg.gru_embed_size)
+        self.atn_rnn = nn.GRU(cfg.gru_embed_size,
+                              atn_sz,
+                              num_layers=cfg.num_gru_layers,
+                              batch_first=True)
+        self.atom_rnn = nn.GRU(get_bond_attention_size(atn_sz),
+                               atom_out_sz,
+                               num_layers=cfg.num_gru_layers,
+                               batch_first=True)
         sz = TMCfg.grid_size
         filter_list = [2, 4, 8, 16, 32]
         self.kp_rnns = nn.ModuleList()
@@ -62,26 +66,34 @@ class AtomKpRnnEncoder(nn.Module):
         )
         
     def forward(self, tmol, device):
-        kps = torch.unsqueeze(tmol.kps, 2)
+        kps = get_padded_kps(tmol, device) #torch.unsqueeze(tmol.kps, 2)
         padded = get_padded_atypes(tmol, device)
         embedded = self.embedding(padded)
-        _, hidden = self.rnn(embedded)
+        atn_outputs, _ = self.atn_rnn(embedded)
+        atn = bond_attention_given(atn_outputs, tmol.bonds)
+        _, hidden = self.atom_rnn(atn)
         kph = kps
         for kp_rnn, down in zip(self.kp_rnns, self.downs):
             kp_hidden, _ = kp_rnn(kph, device=device)
             kph = down(kp_hidden[0])
+            kph = bond_attention_given(kph, tmol.bonds)
         kph = self.flat(kph[:,-1])
         out = self.fc(torch.cat((kph, hidden[0]), -1))
         return out
 
 class AtomKpRnnDecoder(nn.Module):
     def __init__(self, latent_size, cfg, gcfg):
+        atn_sz = 128
         super().__init__()
         self.embedding = nn.Embedding(NUM_ATOM_TYPES, cfg.gru_embed_size)
-        self.rnn = nn.GRU(cfg.gru_embed_size + cfg.gru_hidden_size,
-                          cfg.gru_hidden_size,
-                          num_layers=cfg.num_gru_layers,
-                          batch_first=True)
+        self.atn_rnn = nn.GRU(cfg.gru_embed_size + cfg.gru_hidden_size,
+                              atn_sz,
+                              num_layers=cfg.num_gru_layers,
+                              batch_first=True)
+        self.atom_rnn = nn.GRU(get_bond_attention_size(atn_sz),
+                               cfg.gru_hidden_size,
+                               num_layers=cfg.num_gru_layers,
+                               batch_first=True)
         self.lat_fc = nn.Sequential(
             nn.Linear(latent_size, cfg.gru_hidden_size)
         )
@@ -131,15 +143,17 @@ class AtomKpRnnDecoder(nn.Module):
         x_input = torch.cat([x_emb, z_0], dim=-1)
 
         h_0 = self.lat_fc(z)
-        h_0 = h_0.unsqueeze(0).repeat(self.rnn.num_layers, 1, 1)
+        h_0 = h_0.unsqueeze(0).repeat(self.atn_rnn.num_layers, 1, 1)
 
-        output, _ = self.rnn(x_input, h_0)
+        output, _ = self.atn_rnn(x_input)
+        output = bond_attention_given(output, tmol.bonds)
+        output, _ = self.atom_rnn(output, h_0)
         y = self.out_fc(output)
 
         kp_in_x = get_padded_kps(tmol, device)
         kp_out = self.kp_fc(z_0)
         for up, kp_rnn, in zip(self.ups, self.kp_rnns):
-            kp_out = up(kp_out)
+            kp_out = up(bond_attention_given(kp_out, tmol.bonds))
             kp_hidden, _ = kp_rnn(kp_out, device=device)
             kp_out = kp_hidden[0]
         kp_out = self.final_kp_conv(kp_out).squeeze()
@@ -150,7 +164,7 @@ class AtomKpRnnDecoder(nn.Module):
 
     def generate(self, z, device):
         
-        n_batch = z.shape[0]
+        """n_batch = z.shape[0]
         z_0 = z.unsqueeze(1)
         h = self.lat_fc(z)
         h = h.unsqueeze(0).repeat(self.rnn.num_layers, 1, 1)
@@ -169,7 +183,7 @@ class AtomKpRnnDecoder(nn.Module):
             o, h = self.rnn(x_input, h)
             y = self.out_fc(o.squeeze(1))
             w = torch.argmax(y, 1)
-            x[:,i] = w
+            x[:,i] = w"""
 
-        return TensorMol(atom_types=x[:,1:],
-                         molgrid=self.get_molgrid(z, device))
+        return TensorMol()#atom_types=x[:,1:],
+                         #molgrid=self.get_molgrid(z, device))

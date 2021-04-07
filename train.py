@@ -7,10 +7,17 @@ from pytorch_lightning.loggers.neptune import NeptuneLogger
 from torchviz import make_dot
 import os
 import random
+import numpy as np
 
 SEED = 49
 torch.manual_seed(SEED)
 random.seed(SEED)
+np.random.seed(SEED)
+
+def seed_worker(worker_id):
+    worker_seed = torch.initial_seed() % 2**32
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
 
 from rdkit import RDLogger
 RDLogger.DisableLog('rdApp.*')
@@ -64,8 +71,12 @@ def train(cfg):
     train_d = make_dataset(cfg, True)
     test_d = make_dataset(cfg, False)
 
-    train_loader = DataLoader(train_d, batch_size=cfg.batch_size, num_workers=n_workers, pin_memory=True, shuffle=True)
-    test_loader = DataLoader(test_d, batch_size=2, num_workers=n_workers, pin_memory=True, shuffle=True)
+    train_loader = DataLoader(train_d, batch_size=cfg.batch_size,
+                              num_workers=n_workers, pin_memory=True,
+                              shuffle=True, worker_init_fn=seed_worker)
+    test_loader = DataLoader(test_d, batch_size=2,
+                             num_workers=n_workers, pin_memory=True,
+                             shuffle=True, worker_init_fn=seed_worker)
 
     model = make_model(cfg)
 

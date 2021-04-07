@@ -173,6 +173,8 @@ def render_text(text, dims):
 def render_tmol(tmol, tmol_template=None, dims=(300,300)):
     if tmol_template is None:
         tmol_template = tmol
+    if tmol.atom_types is None:
+        return np.full((*dims, 3), 255, dtype=np.uint8)
     tmola = tmol.argmax()
     imgs = []
     if tmol_template.molgrid is not None:

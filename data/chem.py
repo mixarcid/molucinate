@@ -8,6 +8,7 @@ NUM_ATOM_TYPES = len(ATOM_TYPE_LIST)
 BOND_TYPE_LIST = [ '_', Chem.BondType.SINGLE, Chem.BondType.DOUBLE, Chem.BondType.TRIPLE, Chem.BondType.AROMATIC ]
 BOND_TYPE_HASH = { bond: i for i, bond in enumerate(BOND_TYPE_LIST) }
 NUM_BOND_TYPES = len(BOND_TYPE_LIST)
+NUM_ACT_BOND_TYPES = NUM_BOND_TYPES - 1
 
 ATOM_RADII_HASH = {
     'H': 1.1,
