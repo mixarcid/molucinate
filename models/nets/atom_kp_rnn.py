@@ -86,7 +86,7 @@ class AtomKpRnnDecoder(nn.Module):
         atn_sz = 128
         super().__init__()
         self.embedding = nn.Embedding(NUM_ATOM_TYPES, cfg.gru_embed_size)
-        self.atn_rnn = nn.GRU(cfg.gru_embed_size + cfg.gru_hidden_size,
+        self.atn_rnn = nn.GRU(cfg.gru_embed_size + latent_size,
                               atn_sz,
                               num_layers=cfg.num_gru_layers,
                               batch_first=True)

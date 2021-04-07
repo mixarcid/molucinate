@@ -14,9 +14,9 @@ data:
 model:
   name: vae
   optimizer: adam
-  learn_rate: 1e-4
-  latent_size: 512
-  hidden_size: 512
+  learn_rate: 1e-3
+  latent_size: 1024
+  hidden_size: 1024
   net:
     name: atom_kp_rnn
     init_filters: 2
