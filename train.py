@@ -66,8 +66,8 @@ def train(cfg):
     TMCfg.set_cfg(cfg.data)
     
     is_test = (cfg.debug.stop_at is not None) or cfg.debug.save_img
-    if is_test:
-        torch.autograd.set_detect_anomaly(True)
+    #if is_test:
+    #    torch.autograd.set_detect_anomaly(True)
     n_workers = 0 if is_test else cfg.platform.num_workers
 
     train_d = make_dataset(cfg, True)

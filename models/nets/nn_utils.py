@@ -20,6 +20,19 @@ class Unflatten(nn.Module):
     def forward(self, input):
         return input.view(input.size(0), *self.shape)
 
+class IterativeSequential(nn.Module):
+
+    def __init__(self, cls, filter_list):
+        super().__init__()
+        self.mod_list = nn.ModuleList()
+        for f, f_next in zip(filter_list, filter_list[1:]):
+            self.mod_list.append(cls(f, f_next))
+
+    def forward(self, x, *args):
+        for mod in self.mod_list:
+            x = mod(x, *args)
+        return x
+
 def linear(in_f, out_f):
     return nn.Sequential(
         nn.Linear(in_f, out_f, bias=False),
