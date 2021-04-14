@@ -1,14 +1,20 @@
-name: atn_net_enc
+name: atn_zinc8
 
 debug:
-  cb_n_batches: 50
+  cb_n_batches: 4
   stop_at: null
   save_img: false
 
+# data:
+#   grid_dim: 16
+#   grid_step: 0.5
+#   max_atoms: 38
+#   max_valence: 6
+
 data:
-  grid_dim: 16
+  grid_dim: 8
   grid_step: 0.5
-  max_atoms: 38
+  max_atoms: 8
   max_valence: 6
 
 model:
@@ -25,8 +31,6 @@ model:
       - 2
       - 4
       - 8
-      - 16
-      - 32
     kp_enc_size: 128
     final_enc_size: 128
     init_filters: 2
@@ -40,7 +44,7 @@ model:
     atom_ce_lambda: 1.0
 
 dataset: zinc
-batch_size: 8
+batch_size: 32
 grad_clip: 0
 
 defaults:

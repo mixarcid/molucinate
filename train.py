@@ -9,6 +9,8 @@ import os
 import random
 import numpy as np
 
+#torch.multiprocessing.set_sharing_strategy('file_system')
+
 SEED = 49
 torch.manual_seed(SEED)
 random.seed(SEED)
@@ -76,7 +78,7 @@ def train(cfg):
     train_loader = DataLoader(train_d, batch_size=cfg.batch_size,
                               num_workers=n_workers, #pin_memory=True,
                               shuffle=True, worker_init_fn=seed_worker)
-    test_loader = DataLoader(test_d, batch_size=2,
+    test_loader = DataLoader(test_d, batch_size=cfg.batch_size,
                              num_workers=n_workers, #pin_memory=True,
                              shuffle=True, worker_init_fn=seed_worker)
 

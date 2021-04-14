@@ -1,5 +1,6 @@
 import torch
 import hydra
+import numpy as np
 from rdkit import Chem
 from torch.utils import data
 
@@ -12,7 +13,7 @@ TT_SPLIT = 0.9
 class ZincDataset(data.Dataset):
 
     def __init__(self, cfg, is_train):
-        self.files = open(cfg.platform.zinc_filtered_list).readlines()
+        self.files = np.array(open(f"{cfg.platform.zinc_dir}/files_filtered_{cfg.data.max_atoms}_{cfg.data.grid_dim}.txt").readlines())
         self.is_train = is_train
         self.num_train = int(len(self.files)*TT_SPLIT)
         self.zinc_dir = cfg.platform.zinc_dir

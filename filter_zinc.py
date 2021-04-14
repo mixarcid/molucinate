@@ -12,9 +12,9 @@ def main(cfg):
     print_except = False
     num_files = 0
     TMCfg.set_cfg(cfg.data)
-    with open(cfg.platform.zinc_filtered_list, "w") as f:
-        with open(cfg.platform.zinc_file_list, "r") as zinc_list:
-            for line in tqdm(zinc_list.readlines()[:10000]):
+    with open(f"{cfg.platform.zinc_dir}/files_filtered_{cfg.data.max_atoms}_{cfg.data.grid_dim}.txt", "w") as f:
+        with open(f"{cfg.platform.zinc_dir}/files.txt", "r") as zinc_list:
+            for line in tqdm(zinc_list.readlines()):
                 fname, smiles = line.strip().split("\t")
                 try:
                     mol = Chem.MolFromMol2File(cfg.platform.zinc_dir + fname)

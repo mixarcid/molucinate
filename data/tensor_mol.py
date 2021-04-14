@@ -41,9 +41,6 @@ class TMCfg:
 class TensorBonds(Collatable):
     data: torch.Tensor
 
-    max_atoms = None
-    max_bonds = None
-
     def get_bond_idx(start, end):
         return start*(TMCfg.max_atoms-1) - math.floor(start*(start+1)*0.5) + end - 1
         
