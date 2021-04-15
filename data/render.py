@@ -5,6 +5,7 @@ import cv2
 import os
 import numpy as np
 import torch
+from rdkit import Chem
 try:
     from .chem import *
     from .tensor_mol import TMCfg
@@ -59,17 +60,29 @@ def make_bond_cyl(coord1, coord2, bond_type, meshes):
     else:
         offset = np.cross(diff, [0, 1, 0])
     offset = offset/np.linalg.norm(offset)
-    if bond_type == 1:
+    if bond_type == BOND_TYPE_HASH[Chem.BondType.SINGLE]:
         dists = [0.0]
+    elif bond_type == BOND_TYPE_HASH[Chem.BondType.AROMATIC]:
+        dists = np.linspace(-0.2, 0.2, 2)
     else:
         dists = np.linspace(-0.2, 0.2, bond_type)
-    for k in range(bond_type):
+    for k in range(len(dists)):
         start = transform_coords(coord1 + offset*dists[k])
         end = transform_coords(coord2 + offset*dists[k])
-        sm = trimesh.creation.cylinder(radius=0.1, segment=[start, end])
-        color = np.array([127,127,127,alpha])
-        sm.visual.vertex_colors = color
-        meshes.append(pyrender.Mesh.from_trimesh(sm))
+        if bond_type == BOND_TYPE_HASH[Chem.BondType.AROMATIC] and k == 0:
+            coef = 0.45
+            mid2 = start*coef + end*(1-coef)
+            mid1 = start*(1-coef) + end*coef
+            for s, e in [(start, mid1), (mid2, end)]:
+                sm = trimesh.creation.cylinder(radius=0.1, segment=[s, e])
+                color = np.array([127,127,127,alpha])
+                sm.visual.vertex_colors = color
+                meshes.append(pyrender.Mesh.from_trimesh(sm))
+        else:
+            sm = trimesh.creation.cylinder(radius=0.1, segment=[start, end])
+            color = np.array([127,127,127,alpha])
+            sm.visual.vertex_colors = color
+            meshes.append(pyrender.Mesh.from_trimesh(sm))
 
 def get_kp_meshes(tmol):
 
@@ -86,8 +99,11 @@ def get_kp_meshes(tmol):
         tfs = np.tile(np.eye(4), (1, 1, 1))
         tfs[:,:3,3] = transform_coords(coords[i])
         meshes.append(pyrender.Mesh.from_trimesh(sm, poses=tfs))
-        if i > 0:
-            make_bond_cyl(coords[i], coords[i-1], 1, meshes)
+        if tmol.bonds is None and i > 0:
+                make_bond_cyl(coords[i], coords[i-1], BOND_TYPE_HASH[Chem.BondType.SINGLE], meshes)
+    if tmol.bonds is not None:
+        for start, end, bond in tmol.bonds.get_all_indexes():
+            make_bond_cyl(coords[start], coords[end], bond, meshes)
         
         
     return meshes

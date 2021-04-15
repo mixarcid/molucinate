@@ -102,7 +102,7 @@ class AtomKpRnnDecoder(nn.Module):
         )
 
         
-        filter_list = [32, 32, 16, 8, 4, 2]
+        filter_list = [8, 4, 2] #[32, 32, 16, 8, 4, 2]
         width = get_final_width(filter_list)
         mul = get_linear_mul(filter_list)
         self.kp_fc = TimeDistributed(nn.Sequential(

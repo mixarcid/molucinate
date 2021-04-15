@@ -14,9 +14,9 @@ class MgDecoder(nn.Module):
         super().__init__()
 
         filter_list = [
-            512,
-            256,
-            256,
+            #512,
+            #256,
+            #256,
             64,
             32,
             32,

@@ -18,7 +18,6 @@ def bond_attention_given_btypes(atn_outputs, bonds):
     for batch, start, end, bond in bonds.get_all_indexes():
         print(start, end)
         out[batch, end, bond-1] += atn_outputs[batch, start]
-    print(out[0,1])
     return out.contiguous().view(*atn_outputs.shape[:2],
                                  NUM_ACT_BOND_TYPES*atn_outputs.shape[2],
                                  *atn_outputs.shape[3:])
@@ -29,3 +28,14 @@ def bond_attention_given(atn_outputs, bonds):
     for batch, start, end, bond in bonds.all_indexes:
         out[batch, end] += atn_outputs[batch, start]
     return out
+
+class BondAttentionFixed(nn.Module):
+
+    def forward(self, x, bonds):
+        out = torch.zeros_like(x)
+        out += x
+        for batch, start, end, bond in bonds.all_indexes:
+            out[batch, end] += x[batch, start]
+            out[batch, start] += x[batch, end]
+        return out
+        
