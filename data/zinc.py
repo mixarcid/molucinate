@@ -39,11 +39,13 @@ class ZincDataset(data.Dataset):
         try:
             mol = Chem.MolFromMol2File(fname)
             rdMolTransforms.TransformConformer(mol.GetConformer(0), rand_rotation_matrix())
+            tm = TensorMol(mol)
         except:
             mol = Chem.MolFromMol2File(fname)
             print("Couldn't fit molecule; undoing rotation")
+            tm = TensorMol(mol)
             
-        return TensorMol(mol)
+        return tm
 
 @hydra.main(config_path='../cfg', config_name='config.yaml')
 def main(cfg):
