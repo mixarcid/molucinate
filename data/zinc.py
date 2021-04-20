@@ -36,8 +36,13 @@ class ZincDataset(data.Dataset):
         fname, smiles = self.files[index].strip().split('\t')
         fname = self.zinc_dir + fname.split("/")[-1]
 
-        mol = Chem.MolFromMol2File(fname)
-        rdMolTransforms.TransformConformer(mol.GetConformer(0), rand_rotation_matrix())
+        try:
+            mol = Chem.MolFromMol2File(fname)
+            rdMolTransforms.TransformConformer(mol.GetConformer(0), rand_rotation_matrix())
+        except:
+            mol = Chem.MolFromMol2File(fname)
+            print("Couldn't fit molecule; undoing rotation")
+            
         return TensorMol(mol)
 
 @hydra.main(config_path='../cfg', config_name='config.yaml')
