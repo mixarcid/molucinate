@@ -1,7 +1,7 @@
 name: rot_zinc8
 
 debug:
-  cb_n_batches: 4
+  cb_n_batches: 16
   stop_at: null
   save_img: false
 
