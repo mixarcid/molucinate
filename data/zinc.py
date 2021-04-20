@@ -2,12 +2,15 @@ import torch
 import hydra
 import numpy as np
 from rdkit import Chem
+from rdkit.Chem import rdMolTransforms
 from torch.utils import data
 
 try:
     from .tensor_mol import TensorMol, TMCfg
+    from .utils import rand_rotation_matrix
 except ImportError:
     from tensor_mol import TensorMol, TMCfg
+    from utils import rand_rotation_matrix
 
 TT_SPLIT = 0.9
 class ZincDataset(data.Dataset):
@@ -34,6 +37,7 @@ class ZincDataset(data.Dataset):
         fname = self.zinc_dir + fname.split("/")[-1]
 
         mol = Chem.MolFromMol2File(fname)
+        rdMolTransforms.TransformConformer(mol.GetConformer(0), rand_rotation_matrix())
         return TensorMol(mol)
 
 @hydra.main(config_path='../cfg', config_name='config.yaml')

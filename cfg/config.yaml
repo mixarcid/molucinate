@@ -1,4 +1,4 @@
-name: atn_dec_zinc8
+name: rot_zinc8
 
 debug:
   cb_n_batches: 4
@@ -38,6 +38,7 @@ model:
     dec_lat_fc_size: 128
     dec_rnn_size: 128
     initial_dec_size: 128
+    bond_pred_filters: 16
     
   loss:
     kl_lambda: 0.0

@@ -5,6 +5,7 @@ from .nn_utils import *
 from .mg_decoder import MgDecoder
 from .time_distributed import TimeDistributed
 from .bond_attention import *
+from .bond_predictor import BondPredictor
 
 import sys
 sys.path.insert(0, '../..')
@@ -132,6 +133,8 @@ class AtnNetDecoder(nn.Module):
                           cfg.dec_rnn_size,
                           num_layers=cfg.num_gru_layers,
                           batch_first=True)
+        self.bond_pred = BondPredictor(cfg.dec_rnn_size,
+                                       cfg.bond_pred_filters)
         self.initial_dec = AtnFlat(cfg.dec_rnn_size,
                                    cfg.initial_dec_size,
                                    BondAttentionFixed)
@@ -161,6 +164,8 @@ class AtnNetDecoder(nn.Module):
         
         rnn_in = self.lat_fc(z).unsqueeze(1).repeat(1, TMCfg.max_atoms, 1)
         dec, _ = self.rnn(rnn_in)
+
+        bond_pred = self.bond_pred(dec)
 
         out_atom = self.atom_out(dec, tmol.bonds)
         
