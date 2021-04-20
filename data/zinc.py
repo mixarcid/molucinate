@@ -41,8 +41,9 @@ class ZincDataset(data.Dataset):
             rdMolTransforms.TransformConformer(mol.GetConformer(0), rand_rotation_matrix())
             tm = TensorMol(mol)
         except:
+            #raise
             mol = Chem.MolFromMol2File(fname)
-            print("Couldn't fit molecule; undoing rotation")
+            #print("Couldn't fit molecule; undoing rotation")
             tm = TensorMol(mol)
             
         return tm
