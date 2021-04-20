@@ -25,7 +25,7 @@ def bond_attention_given_btypes(atn_outputs, bonds):
 def bond_attention_given(atn_outputs, bonds):
     out = torch.zeros_like(atn_outputs)
     out += atn_outputs
-    for batch, start, end, bond in bonds.all_indexes:
+    for batch, start, end, bond in bonds.get_all_indexes():
         out[batch, end] += atn_outputs[batch, start]
     return out
 
@@ -34,7 +34,7 @@ class BondAttentionFixed(nn.Module):
     def forward(self, x, bonds):
         out = torch.zeros_like(x)
         out += x
-        for batch, start, end, bond in bonds.all_indexes:
+        for batch, start, end, bond in bonds.get_all_indexes():
             out[batch, end] += x[batch, start]
             out[batch, start] += x[batch, end]
         return out

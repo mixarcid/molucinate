@@ -216,6 +216,7 @@ def test_kp():
 
 def test_render_tmol():
     mol = Chem.MolFromMol2File('test_data/zinc100001.mol2')
+    rdMolTransforms.TransformConformer(mol.GetConformer(0), rand_rotation_matrix())
     tm = TensorMol(mol)
     img = render_tmol(tm)
     cv2.imshow("mol", img)
@@ -224,6 +225,8 @@ def test_render_tmol():
 if __name__ == "__main__":
     from omegaconf import OmegaConf
     from tensor_mol import TensorMol
+    from utils import rand_rotation_matrix
+    from rdkit.Chem import rdMolTransforms
     cfg = OmegaConf.create({
         'grid_dim': 16,
         'grid_step': 0.5,
