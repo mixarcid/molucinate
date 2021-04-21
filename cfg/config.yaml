@@ -34,6 +34,7 @@ model:
     kp_enc_size: 128
     final_enc_size: 128
     num_gru_layers: 1
+    enc_rnn_size: 128
 
     dec_lat_fc_size: 128
     dec_rnn_size: 128

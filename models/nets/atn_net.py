@@ -101,9 +101,12 @@ class AtnNetEncoder(nn.Module):
                                  BondAttentionFixed)
 
         self.rnn = nn.GRU(cfg.final_enc_size,
-                          hidden_size,
+                          cfg.enc_rnn_size,
                           num_layers=cfg.num_gru_layers,
-                          batch_first=True)
+                          batch_first=True,
+                          bidirectional=True)
+
+        self.flat = linear(cfg.enc_rnn_size*2, hidden_size)
 
     def forward(self, tmol, device):
         aenc = self.atom_embed(tmol.atom_types)
@@ -118,7 +121,8 @@ class AtnNetEncoder(nn.Module):
         enc = torch.cat((aenc, kpenc), 2)
         enc = self.final_enc(enc, tmol.bonds)
         _, hidden = self.rnn(enc)
-        return hidden[0]
+        hidden = torch.cat((hidden[0], hidden[1]), 1)
+        return self.flat(hidden)
 
 class AtnNetDecoder(nn.Module):
 
@@ -132,10 +136,11 @@ class AtnNetDecoder(nn.Module):
         self.rnn = nn.GRU(cfg.dec_lat_fc_size,
                           cfg.dec_rnn_size,
                           num_layers=cfg.num_gru_layers,
-                          batch_first=True)
-        self.bond_pred = BondPredictor(cfg.dec_rnn_size,
+                          batch_first=True,
+                          bidirectional=True)
+        self.bond_pred = BondPredictor(cfg.dec_rnn_size*2,
                                        cfg.bond_pred_filters)
-        self.initial_dec = AtnFlat(cfg.dec_rnn_size,
+        self.initial_dec = AtnFlat(cfg.dec_rnn_size*2,
                                    cfg.initial_dec_size,
                                    BondAttentionFixed)
         self.atom_out = AtnFlat(cfg.initial_dec_size,
@@ -166,6 +171,7 @@ class AtnNetDecoder(nn.Module):
         dec, _ = self.rnn(rnn_in)
 
         bond_pred = self.bond_pred(dec)
+        dec = self.initial_dec(dec, tmol.bonds)
 
         out_atom = self.atom_out(dec, tmol.bonds)
         
