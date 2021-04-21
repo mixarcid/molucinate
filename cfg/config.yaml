@@ -1,4 +1,4 @@
-name: rot_zinc8
+name: bidir_zinc8
 
 debug:
   cb_n_batches: 16
