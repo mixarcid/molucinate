@@ -121,7 +121,7 @@ class AtnNetEncoder(nn.Module):
         enc = torch.cat((aenc, kpenc), 2)
         enc = self.final_enc(enc, tmol.bonds)
         _, hidden = self.rnn(enc)
-        hidden = torch.cat((hidden[0], hidden[1]), 1)
+        hidden = torch.cat((hidden[-1], hidden[-2]), 1)
         return self.flat(hidden)
 
 class AtnNetDecoder(nn.Module):
