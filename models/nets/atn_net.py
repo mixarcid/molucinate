@@ -6,68 +6,12 @@ from .mg_decoder import MgDecoder
 from .time_distributed import TimeDistributed
 from .bond_attention import *
 from .bond_predictor import BondPredictor
+from .attention_utils import *
 
 import sys
 sys.path.insert(0, '../..')
-from data.tensor_mol import TensorMol, TMCfg
+from data.tensor_mol import TensorMol, TensorBonds, TMCfg
 from data.chem import *
-
-class AtnDownConv(nn.Module):
-
-    def __init__(self, in_f, out_f):
-        super().__init__()
-        self.atn = BondAttentionFixed()
-        self.conv = TimeDistributed(
-            nn.Sequential(
-                nn.Conv3d(in_f, out_f, kernel_size=3, bias=False, padding=1),
-                nn.BatchNorm3d(out_f),
-                nn.LeakyReLU(LEAK_VALUE),
-                downsample(),
-            ),
-            axis=2
-        )
-
-    def forward(self, x, bonds):
-        x = self.atn(x, bonds)
-        return self.conv(x)
-
-class AtnUpConv(nn.Module):
-
-    def __init__(self, in_f, out_f):
-        super().__init__()
-        self.atn = BondAttentionFixed()
-        self.conv = TimeDistributed(
-            nn.Sequential(
-                upsample(in_f, out_f),
-                nn.Conv3d(out_f, out_f, kernel_size=3, bias=False, padding=1),
-                nn.BatchNorm3d(out_f),
-                nn.LeakyReLU(LEAK_VALUE),
-            ),
-            axis=2
-        )
-
-    def forward(self, x, bonds):
-        x = self.atn(x, bonds)
-        return self.conv(x)
-
-class AtnFlat(nn.Module):
-
-    def __init__(self, in_filters, out_filters, atn_cls, *args):
-        super().__init__()
-        self.atn = atn_cls(*args)
-        self.linear = TimeDistributed(
-            nn.Sequential(
-                nn.Linear(in_filters, out_filters, bias=False),
-                nn.BatchNorm1d(out_filters),
-                nn.LeakyReLU(LEAK_VALUE)
-            ),
-            axis=2
-        )
-
-    def forward(self, x, *args):
-        x = self.atn(x, *args)
-        return self.linear(x)
-        
 
 class AtnNetEncoder(nn.Module):
 
@@ -77,7 +21,8 @@ class AtnNetEncoder(nn.Module):
         self.atom_embed = nn.Embedding(NUM_ATOM_TYPES, cfg.atom_embed_size)
         self.atom_enc = AtnFlat(cfg.atom_embed_size,
                                 cfg.atom_enc_size,
-                                BondAttentionFixed)
+                                BondAttentionFixed,
+                                False)
 
         self.kp_init_enc = TimeDistributed(
             nn.Sequential(
@@ -89,16 +34,16 @@ class AtnNetEncoder(nn.Module):
             axis=2
         )
         self.kp_enc = IterativeSequential(
-            AtnDownConv, cfg.kp_filter_list
+            AtnDownConv, cfg.kp_filter_list, False
         )
         mul = get_linear_mul(cfg.kp_filter_list)
         self.kp_flat_enc = AtnFlat(mul*cfg.kp_filter_list[-1],
                                    cfg.kp_enc_size,
-                                   BondAttentionFixed)
+                                   BondAttentionFixed, False)
 
         self.final_enc = AtnFlat(cfg.atom_enc_size + cfg.kp_enc_size,
                                  cfg.final_enc_size,
-                                 BondAttentionFixed)
+                                 BondAttentionFixed, False)
 
         self.bidirectional = (cfg.num_gru_directions==2)
         self.rnn = nn.GRU(cfg.final_enc_size,
@@ -146,19 +91,19 @@ class AtnNetDecoder(nn.Module):
                                        cfg.bond_pred_filters)
         self.initial_dec = AtnFlat(cfg.dec_rnn_size*cfg.num_gru_directions,
                                    cfg.initial_dec_size,
-                                   BondAttentionFixed)
+                                   BondAttentionFixed, False)
         self.atom_out = AtnFlat(cfg.initial_dec_size,
                                 NUM_ATOM_TYPES,
-                                BondAttentionFixed)
+                                BondAttentionFixed, False)
         filter_list = list(reversed(cfg.kp_filter_list))
         mul = get_linear_mul(filter_list)
         width = get_final_width(filter_list)
         self.kp_flat_dec = AtnFlat(cfg.initial_dec_size,
                                    mul*filter_list[0],
-                                   BondAttentionFixed)
+                                   BondAttentionFixed, False)
         self.kp_reshape = Unflatten((TMCfg.max_atoms, filter_list[0], width, width, width))
         self.kp_dec = IterativeSequential(
-            AtnUpConv, filter_list
+            AtnUpConv, filter_list, False
         )
         self.kp_out = TimeDistributed(
             nn.Conv3d(filter_list[-1], 1,
@@ -175,6 +120,7 @@ class AtnNetDecoder(nn.Module):
         dec, _ = self.rnn(rnn_in)
 
         bond_pred = self.bond_pred(dec)
+        
         dec = self.initial_dec(dec, tmol.bonds)
 
         out_atom = self.atom_out(dec, tmol.bonds)
@@ -186,6 +132,6 @@ class AtnNetDecoder(nn.Module):
 
         return TensorMol(atom_types=out_atom,
                          kps_1h=kp_out,
-                         bonds=tmol.bonds)
+                         bonds=bond_pred)
                           
         
