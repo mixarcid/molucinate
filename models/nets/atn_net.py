@@ -100,13 +100,14 @@ class AtnNetEncoder(nn.Module):
                                  cfg.final_enc_size,
                                  BondAttentionFixed)
 
+        self.bidirectional = (cfg.num_gru_directions==2)
         self.rnn = nn.GRU(cfg.final_enc_size,
                           cfg.enc_rnn_size,
                           num_layers=cfg.num_gru_layers,
                           batch_first=True,
-                          bidirectional=True)
+                          bidirectional=self.bidirectional)
 
-        self.flat = linear(cfg.enc_rnn_size*2, hidden_size)
+        self.flat = linear(cfg.enc_rnn_size*cfg.num_gru_directions, hidden_size)
 
     def forward(self, tmol, device):
         aenc = self.atom_embed(tmol.atom_types)
@@ -121,7 +122,10 @@ class AtnNetEncoder(nn.Module):
         enc = torch.cat((aenc, kpenc), 2)
         enc = self.final_enc(enc, tmol.bonds)
         _, hidden = self.rnn(enc)
-        hidden = torch.cat((hidden[-1], hidden[-2]), 1)
+        if self.bidirectional:
+            hidden = torch.cat((hidden[-1], hidden[-2]), 1)
+        else:
+            hidden = hidden[-1]
         return self.flat(hidden)
 
 class AtnNetDecoder(nn.Module):
@@ -137,20 +141,15 @@ class AtnNetDecoder(nn.Module):
                           cfg.dec_rnn_size,
                           num_layers=cfg.num_gru_layers,
                           batch_first=True,
-                          bidirectional=True)
-        self.bond_pred = BondPredictor(cfg.dec_rnn_size*2,
+                          bidirectional=(cfg.num_gru_directions==2))
+        self.bond_pred = BondPredictor(cfg.dec_rnn_size*cfg.num_gru_directions,
                                        cfg.bond_pred_filters)
-        self.initial_dec = AtnFlat(cfg.dec_rnn_size*2,
+        self.initial_dec = AtnFlat(cfg.dec_rnn_size*cfg.num_gru_directions,
                                    cfg.initial_dec_size,
                                    BondAttentionFixed)
-        self.atom_out = nn.GRU(cfg.dec_rnn_size*2,
-                                  NUM_ATOM_TYPES,
-                                  num_layers=1,
-                                  batch_first=True,
-                                  bidirectional=False)
-        #self.atom_out = AtnFlat(cfg.initial_dec_size,
-        #                        NUM_ATOM_TYPES,
-        #                        BondAttentionFixed)
+        self.atom_out = AtnFlat(cfg.initial_dec_size,
+                                NUM_ATOM_TYPES,
+                                BondAttentionFixed)
         filter_list = list(reversed(cfg.kp_filter_list))
         mul = get_linear_mul(filter_list)
         width = get_final_width(filter_list)
@@ -174,14 +173,11 @@ class AtnNetDecoder(nn.Module):
         
         rnn_in = self.lat_fc(z).unsqueeze(1).repeat(1, TMCfg.max_atoms, 1)
         dec, _ = self.rnn(rnn_in)
-        #print(dec.shape)
-
-        out_atom, _ = self.atom_out(dec)
 
         bond_pred = self.bond_pred(dec)
         dec = self.initial_dec(dec, tmol.bonds)
 
-        #out_atom = self.atom_out(dec, tmol.bonds)
+        out_atom = self.atom_out(dec, tmol.bonds)
         
         kp_out = self.kp_flat_dec(dec, tmol.bonds)
         kp_out = self.kp_reshape(kp_out)
