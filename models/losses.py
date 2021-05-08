@@ -31,13 +31,14 @@ def kp_ce_loss(recon, x, mu, logvar):
     )
 
 def bond_ce_loss(recon, x, mu, logvar):
-    ls_bonds = F.log_softmax(recon.bonds.data[:,1:])
+    ls_bonds = F.log_softmax(recon.bonds.data[:,1:], dim=-2)
     valences = torch.einsum('ban->bna', x.atom_valences)[:,:,:,None]
     valence_mask = valences != 0
     log_valences = torch.log2(valences.float())
     log_valences[valences == 0] = 0
     x_bonds = x.bonds.data[:,1:]
     cor_ls_bonds = (ls_bonds + log_valences)*valence_mask
+    print(-torch.mean(torch.einsum('bnas,bnas->bas', cor_ls_bonds, x_bonds)))
     return -torch.mean(torch.einsum('bnas,bnas->bas', cor_ls_bonds, x_bonds))
         
 def combine_losses(loss_fns, cfg, *args):
