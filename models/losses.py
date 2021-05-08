@@ -38,7 +38,7 @@ def bond_ce_loss(recon, x, mu, logvar):
     log_valences[valences == 0] = 0
     x_bonds = x.bonds.data[:,1:]
     cor_ls_bonds = (ls_bonds + log_valences)*valence_mask
-    print(-torch.mean(torch.einsum('bnas,bnas->bas', cor_ls_bonds, x_bonds)))
+    #print(-torch.mean(torch.einsum('bnas,bnas->bas', cor_ls_bonds, x_bonds)))
     return -torch.mean(torch.einsum('bnas,bnas->bas', cor_ls_bonds, x_bonds))
         
 def combine_losses(loss_fns, cfg, *args):
