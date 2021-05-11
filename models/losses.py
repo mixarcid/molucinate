@@ -34,7 +34,7 @@ def bond_ce_loss(recon, x, mu, logvar):
     recon_bonds = recon.bonds.data
     recon_bonds = recon_bonds.permute(0, 2, 3, 1).contiguous().view(-1, NUM_BOND_TYPES)
     x_bonds = x.bonds.data.permute(0, 2, 3, 1).contiguous().view(-1, NUM_BOND_TYPES)
-    print(recon_bonds)
+    x_bonds = torch.argmax(x_bonds, -1)
     return F.cross_entropy(
         recon_bonds,
         x_bonds
