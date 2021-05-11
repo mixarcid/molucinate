@@ -20,6 +20,14 @@ def atom_ce_loss(recon, x, mu, logvar):
         #ignore_index=ATOM_TYPE_HASH["_"]
     )
 
+def valence_ce_loss(recon, x, mu, logvar):
+    recon = recon.atom_valences
+    x = x.atom_valences
+    return F.cross_entropy(
+        recon.contiguous().view(-1, recon.size(-1)),
+        x.contiguous().view(-1),
+    )
+
 def kp_ce_loss(recon, x, mu, logvar):
     idxs = x.atom_types != ATOM_TYPE_HASH["_"]
     x = torch.unsqueeze(x.kps_1h[idxs], 0)
@@ -54,6 +62,6 @@ def combine_losses(loss_fns, cfg, *args):
 
 def get_loss_fn(model_name, cfg):
     loss_fns = {
-        'vae': [ atom_ce_loss, kp_ce_loss, kl_loss, bond_ce_loss ]
+        'vae': [ atom_ce_loss, valence_ce_loss, kp_ce_loss, kl_loss, bond_ce_loss ]
     }[model_name]
     return lambda *args: combine_losses(loss_fns, cfg, *args)

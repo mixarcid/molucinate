@@ -27,6 +27,8 @@ model:
     name: atn_net
     atom_embed_size: 32
     atom_enc_size: 32
+    valence_embed_size: 32
+    valence_enc_size: 32
     kp_filter_list:
       - 2
       - 4
