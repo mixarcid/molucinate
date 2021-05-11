@@ -8,11 +8,11 @@ import numpy as np
 try:
     from .chem import *
     from .utils import *
-    from .dataloader import Collatable
+    from .dataloader import Collatable, collate
 except ImportError:
     from chem import *
     from utils import *
-    from dataloader import Collatable
+    from dataloader import Collatable, collate
 
 class TMCfg:
 
@@ -43,19 +43,22 @@ class TensorBonds(Collatable):
     all_indexes: Optional[List[List[int]]] = None
         
     def __init__(self, mol=None, data=None):
-        if mol is None:
+        if data is not None:
             self.data = data
             return
         # bond type, atom 1 idx, atom 2 idx
         self.data = torch.zeros((NUM_BOND_TYPES, TMCfg.max_atoms, TMCfg.max_atoms))
         self.data[BOND_TYPE_HASH['_']] = 1
 
+    def add_bond_indexes(self, bond_hash, start, end):
+        for s, e in [(start, end), (end, start)]:
+            self.data[bond_hash, s, e] = 1
+            self.data[BOND_TYPE_HASH['_'], s, e] = 0
+        
     def add_bond(self, bond):
         start, end = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
         bond_type = bond.GetBondType()
-        for s, e in [(start, end), (end, start)]:
-            self.data[BOND_TYPE_HASH[bond_type], s, e] = 1
-            self.data[BOND_TYPE_HASH['_'], s, e] = 0
+        self.add_bond_indexes(BOND_TYPE_HASH[bond_type], start, end)
 
     def get_bond(self, start, end):
         if len(self.data.shape) == 3:
@@ -89,8 +92,21 @@ class TensorBonds(Collatable):
         return out
 
     def argmax(self, atom_valences):
-        raise NotImplementedError
-                
+        if len(self.data.shape) == 4:
+            out = []
+            for i in range(self.data.size(0)):
+                out.append(self[i].argmax(atom_valences[i]))
+            return collate(out)
+        out = TensorBonds()
+        for bi in range(NUM_ACT_BOND_TYPES):
+            for ai in range(TMCfg.max_atoms):
+                bond = self.data[bi+1][ai]
+                valence = atom_valences[ai][bi]
+                next_atoms = torch.argsort(-bond)[:valence]
+                for aj in next_atoms:
+                    if aj > ai:
+                        out.add_bond_indexes(bi+1, ai, aj)
+        return out
 
 # just stores atom coords, atom types, and bonds
 # not used by any model directly, but useful intermediate
@@ -207,9 +223,7 @@ class TensorMol(Collatable):
             else:
                 atom_valences = torch.argmax(self.atom_valences, -1)
             atom_types = torch.argmax(self.atom_types, -1)
-            # todo: re-add
-            #bonds = self.bonds.argmax(self.bonds, atom_valences)
-            bonds = self.bonds
+            bonds = self.bonds.argmax(atom_valences)
             return TensorMol(
                 None,
                 self.molgrid,

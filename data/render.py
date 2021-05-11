@@ -212,6 +212,7 @@ def test_kp():
     mol = Chem.MolFromMol2File('test_data/zinc100001.mol2')
     print(Chem.MolToSmiles(mol))
     tm = TensorMol(mol)
+    tm = tm.argmax()
     render_kp_rt(tm)
 
 def test_render_tmol():
@@ -234,5 +235,5 @@ if __name__ == "__main__":
         'max_valence': 6
     })
     TMCfg.set_cfg(cfg)
-    test_render_tmol()
-    #test_kp()
+    #test_render_tmol()
+    test_kp()

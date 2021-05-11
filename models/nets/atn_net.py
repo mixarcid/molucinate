@@ -107,8 +107,10 @@ class AtnNetDecoder(nn.Module):
         self.atom_out = AtnFlat(cfg.initial_dec_size,
                                 NUM_ATOM_TYPES,
                                 BondAttentionFixed, False)
-        self.valence_out = ValenceDecoder(AtnFlat, cfg.initial_dec_size,
-                                          BondAttentionFixed, False)
+        #self.valence_out = ValenceDecoder(AtnFlat, cfg.initial_dec_size,
+        #                                  BondAttentionFixed, False)
+
+        self.valence_out = ValenceDecoder(lambda hid, val: TimeDistributed(nn.Linear(hid, val), 2), cfg.dec_rnn_size*cfg.num_gru_directions)
         
         filter_list = list(reversed(cfg.kp_filter_list))
         mul = get_linear_mul(filter_list)
@@ -128,22 +130,27 @@ class AtnNetDecoder(nn.Module):
 
     def forward(self, z, tmol, device):
 
-        if tmol is None:
-            return TensorMol()
+        #if tmol is None:
+        #    return TensorMol()
         
         rnn_in = self.lat_fc(z).unsqueeze(1).repeat(1, TMCfg.max_atoms, 1)
         dec, _ = self.rnn(rnn_in)
 
         bond_pred = self.bond_pred(dec)
-        
-        dec = self.initial_dec(dec, tmol.bonds)
+        out_valences = self.valence_out(dec)
 
-        out_atom = self.atom_out(dec, tmol.bonds)
-        out_valences = self.valence_out(dec, tmol.bonds)
+        if tmol is None:
+            bonds = bond_pred.argmax(torch.argmax(out_valences, -1))
+        else:
+            bonds = tmol.bonds
         
-        kp_out = self.kp_flat_dec(dec, tmol.bonds)
+        dec = self.initial_dec(dec, bonds)
+
+        out_atom = self.atom_out(dec, bonds)
+        
+        kp_out = self.kp_flat_dec(dec, bonds)
         kp_out = self.kp_reshape(kp_out)
-        kp_out = self.kp_dec(kp_out, tmol.bonds)
+        kp_out = self.kp_dec(kp_out, bonds)
         kp_out = self.kp_out(kp_out).squeeze()
 
         return TensorMol(atom_types=out_atom,
