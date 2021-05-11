@@ -13,8 +13,8 @@ class ValenceEmbedding(nn.Module):
         self.embed = nn.Embedding(TMCfg.max_valence**NUM_ACT_BOND_TYPES, embed_size)
 
     def forward(self, valences, device):
-        mult = torch.tensor([TMCfg.max_valence**i for i in range(NUM_ACT_BOND_TYPES)], device=device)
-        to_embed = torch.einsum('bav,v->ba', valences, mult)
+        mult = torch.tensor([TMCfg.max_valence**i for i in range(NUM_ACT_BOND_TYPES)], device=device).float()
+        to_embed = torch.einsum('bav,v->ba', valences.float(), mult).long()
         return self.embed(to_embed)
         
 
