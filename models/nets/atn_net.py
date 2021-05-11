@@ -67,7 +67,7 @@ class AtnNetEncoder(nn.Module):
         aenc = self.atom_embed(tmol.atom_types)
         aenc = self.atom_enc(aenc, tmol.bonds)
 
-        venc = self.valence_embed(tmol.atom_valences)
+        venc = self.valence_embed(tmol.atom_valences, device)
         venc = self.valence_enc(venc, tmol.bonds)
         
         kpenc = torch.unsqueeze(tmol.kps, 2)
