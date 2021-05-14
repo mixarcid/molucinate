@@ -2,6 +2,7 @@ from typing import List, Optional
 
 import torch
 from rdkit import Chem
+from rdkit.Geometry import Point3D
 import math
 import numpy as np
 
@@ -250,8 +251,25 @@ class TensorMol(Collatable):
             ret += ATOM_TYPE_LIST[atom]
         return ret
 
+    def get_mol(self, add_conformer=True):
+        mol = Chem.RWMol()
+        for atom in self.atom_types:
+            if atom != ATOM_TYPE_HASH['_']:
+                mol.AddAtom(Chem.Atom(ATOM_TYPE_LIST[atom]))
+        for start, end, bond in self.bonds.get_all_indexes():
+            mol.AddBond(start, end, BOND_TYPE_LIST[bond])
+        coords = self.get_coords()
+        conformer = Chem.Conformer(mol.GetNumAtoms())
+        if add_conformer:
+            for i, coord in enumerate(coords):
+                if self.atom_types[i] != ATOM_TYPE_HASH['_']:
+                    conformer.SetAtomPosition(i, Point3D(float(coords[i][0]),
+                                                     float(coords[i][1]),
+                                                     float(coords[i][2])))
+            mol.AddConformer(conformer)
+        return mol
 
-def test_basic():
+def get_test_mol():
     from omegaconf import OmegaConf
     cfg = OmegaConf.create({
         'grid_dim': 16,
@@ -261,39 +279,38 @@ def test_basic():
     })
     TMCfg.set_cfg(cfg)
     mol = Chem.MolFromMol2File('test_data/zinc100001.mol2')
+    return mol
+
+def test_basic():
+    mol = get_test_mol()
     print(Chem.MolToSmiles(mol))
     tm = TensorMol(mol)
     print(torch.amax(tm.molgrid))
     print(tm.atom_valences)
 
 def test_collate():
-    from omegaconf import OmegaConf
-    cfg = OmegaConf.create({
-        'grid_dim': 16,
-        'grid_step': 0.5,
-        'max_atoms': 38,
-        'max_valence': 6
-    })
-    TMCfg.set_cfg(cfg)
-    mol = Chem.MolFromMol2File('test_data/zinc100001.mol2')
+    mol = get_test_mol()
     tm = TensorMol(mol)
     for attr in tm.recurse():
         print(attr)
 
 def test_bond_argmax():
-    from omegaconf import OmegaConf
-    cfg = OmegaConf.create({
-        'grid_dim': 16,
-        'grid_step': 0.5,
-        'max_atoms': 38,
-        'max_valence': 6
-    })
-    TMCfg.set_cfg(cfg)
-    mol = Chem.MolFromMol2File('test_data/zinc100001.mol2')
+    mol = get_test_mol()
     tm = TensorMol(mol)
     bdata = torch.randn((NUM_BOND_TYPES, TMCfg.max_atoms, TMCfg.max_atoms))
     bonds = TensorBonds(data=bdata)
     print(bonds.argmax(tm.atom_valences))
+
+def test_mol_export():
+    from rdkit.Chem import Draw
+    mol = get_test_mol()
+    print(Chem.MolToSmiles(mol))
+    tm = TensorMol(mol)
+    mol2 = tm.get_mol()
+    print(Chem.MolToSmiles(mol2))
+    Draw.MolToFile(mol2, "test_output/mol_3d.png", size=(500, 500))
+    Draw.MolToFile(tm.get_mol(False), "test_output/mol_2d.png", size=(500, 500))
+    
     
 if __name__ == "__main__":
-    test_bond_argmax()
+    test_mol_export()
