@@ -92,18 +92,20 @@ class TensorBonds(Collatable):
         self.all_indexes = out
         return out
 
-    def argmax(self, atom_valences):
+    def argmax(self, atom_types, atom_valences):
         if len(self.data.shape) == 4:
             out = []
             for i in range(self.data.size(0)):
-                out.append(self[i].argmax(atom_valences[i]))
+                out.append(self[i].argmax(atom_types[i], atom_valences[i]))
             return collate(out)
         out = TensorBonds()
+        idxs = atom_types != ATOM_TYPE_HASH["_"]
         for bi in range(NUM_ACT_BOND_TYPES):
             for ai in range(TMCfg.max_atoms):
+                if not idxs[ai]: continue
                 bond = self.data[bi+1][ai]
                 valence = atom_valences[ai][bi]
-                next_atoms = torch.argsort(-bond)[:valence]
+                next_atoms = torch.argsort(-bond)[idxs][:valence]
                 for aj in next_atoms:
                     if aj > ai:
                         out.add_bond_indexes(bi+1, ai, aj)
@@ -224,7 +226,7 @@ class TensorMol(Collatable):
             else:
                 atom_valences = torch.argmax(self.atom_valences, -1)
             atom_types = torch.argmax(self.atom_types, -1)
-            bonds = self.bonds.argmax(atom_valences)
+            bonds = self.bonds.argmax(atom_types, atom_valences)
             return TensorMol(
                 None,
                 self.molgrid,
@@ -253,11 +255,17 @@ class TensorMol(Collatable):
 
     def get_mol(self, add_conformer=True):
         mol = Chem.RWMol()
+        mol_idxs = []
+        idx = 0
         for atom in self.atom_types:
             if atom != ATOM_TYPE_HASH['_']:
                 mol.AddAtom(Chem.Atom(ATOM_TYPE_LIST[atom]))
+                mol_idxs.append(idx)
+                idx += 1
+            else:
+                mol_idxs.append(None)
         for start, end, bond in self.bonds.get_all_indexes():
-            mol.AddBond(start, end, BOND_TYPE_LIST[bond])
+            mol.AddBond(mol_idxs[start], mol_idxs[end], BOND_TYPE_LIST[bond])
         coords = self.get_coords()
         conformer = Chem.Conformer(mol.GetNumAtoms())
         if add_conformer:
@@ -299,7 +307,7 @@ def test_bond_argmax():
     tm = TensorMol(mol)
     bdata = torch.randn((NUM_BOND_TYPES, TMCfg.max_atoms, TMCfg.max_atoms))
     bonds = TensorBonds(data=bdata)
-    print(bonds.argmax(tm.atom_valences))
+    bonds_a = bonds.argmax(tm.atom_types, tm.atom_valences)
 
 def test_mol_export():
     from rdkit.Chem import Draw
@@ -313,4 +321,5 @@ def test_mol_export():
     
     
 if __name__ == "__main__":
-    test_mol_export()
+    t#est_mol_export()
+    #est_bond_argmax()

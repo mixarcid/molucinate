@@ -202,7 +202,7 @@ def render_tmol(tmol, tmol_template=None, dims=(300,300)):
         else:
             imgs.append(render_text(tmola.atom_str(), dims))
     if tmol.bonds is not None:
-        imgs.append(cv2.cvtColor(np.array(Draw.MolToImage(tmola.get_mol(False))), cv2.COLOR_BGR2RGB))
+        imgs.append(cv2.cvtColor(np.array(Draw.MolToImage(tmola.get_mol(False), kekulize=False, size=dims)), cv2.COLOR_BGR2RGB))
     return get_multi([[img] for img in imgs])
 
 def test_molgrid():

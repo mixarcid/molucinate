@@ -21,8 +21,9 @@ def atom_ce_loss(recon, x, mu, logvar):
     )
 
 def valence_ce_loss(recon, x, mu, logvar):
-    recon = recon.atom_valences
-    x = x.atom_valences
+    idxs = x.atom_types != ATOM_TYPE_HASH["_"]
+    recon = recon.atom_valences[idxs]
+    x = x.atom_valences[idxs]
     return F.cross_entropy(
         recon.contiguous().view(-1, recon.size(-1)),
         x.contiguous().view(-1),
@@ -39,9 +40,15 @@ def kp_ce_loss(recon, x, mu, logvar):
     )
 
 def bond_ce_loss(recon, x, mu, logvar):
+    idxs = (x.atom_types != ATOM_TYPE_HASH["_"]).float()
+    max_atom = torch.amax(idxs)+1
     recon_bonds = recon.bonds.data
-    recon_bonds = recon_bonds.permute(0, 2, 3, 1).contiguous().view(-1, NUM_BOND_TYPES)
-    x_bonds = x.bonds.data.permute(0, 2, 3, 1).contiguous().view(-1, NUM_BOND_TYPES)
+    x_bonds = x.bonds.data
+    recon_bonds = recon_bonds.permute(0, 2, 3, 1)#.contiguous().view(-1, NUM_BOND_TYPES)
+    x_bonds = x.bonds.data.permute(0, 2, 3, 1)#.contiguous().view(-1, NUM_BOND_TYPES)
+    multi_idxs = torch.bmm(idxs.unsqueeze(-1), idxs.unsqueeze(-2)).bool().unsqueeze(1).expand(-1, NUM_BOND_TYPES, -1, -1).permute(0, 2, 3, 1)
+    recon_bonds = recon_bonds[multi_idxs].contiguous().view(-1, NUM_BOND_TYPES)
+    x_bonds = x_bonds[multi_idxs].contiguous().view(-1, NUM_BOND_TYPES)
     x_bonds = torch.argmax(x_bonds, -1)
     return F.cross_entropy(
         recon_bonds,
