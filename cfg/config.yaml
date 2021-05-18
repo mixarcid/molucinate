@@ -27,6 +27,8 @@ model:
     name: atn_net
     atom_embed_size: 32
     atom_enc_size: 32
+    valence_embed_size: 32
+    valence_enc_size: 32
     kp_filter_list:
       - 2
       - 4
@@ -34,6 +36,7 @@ model:
     kp_enc_size: 128
     final_enc_size: 128
     num_gru_layers: 1
+    num_gru_directions: 1
     enc_rnn_size: 128
 
     dec_lat_fc_size: 128
@@ -46,6 +49,8 @@ model:
     l2_lambda: 1.0
     kp_ce_lambda: 1.0
     atom_ce_lambda: 1.0
+    bond_ce_lambda: 1.0
+    valence_ce_lambda: 1.0
 
 dataset: zinc
 batch_size: 32

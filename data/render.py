@@ -6,6 +6,7 @@ import os
 import numpy as np
 import torch
 from rdkit import Chem
+from rdkit.Chem import Draw
 try:
     from .chem import *
     from .tensor_mol import TMCfg
@@ -200,6 +201,8 @@ def render_tmol(tmol, tmol_template=None, dims=(300,300)):
             imgs.append(render_kp(tmola))
         else:
             imgs.append(render_text(tmola.atom_str(), dims))
+    if tmol.bonds is not None:
+        imgs.append(cv2.cvtColor(np.array(Draw.MolToImage(tmola.get_mol(False), kekulize=False, size=dims)), cv2.COLOR_BGR2RGB))
     return get_multi([[img] for img in imgs])
 
 def test_molgrid():
@@ -212,6 +215,7 @@ def test_kp():
     mol = Chem.MolFromMol2File('test_data/zinc100001.mol2')
     print(Chem.MolToSmiles(mol))
     tm = TensorMol(mol)
+    tm = tm.argmax()
     render_kp_rt(tm)
 
 def test_render_tmol():

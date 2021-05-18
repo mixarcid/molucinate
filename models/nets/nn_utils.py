@@ -22,11 +22,11 @@ class Unflatten(nn.Module):
 
 class IterativeSequential(nn.Module):
 
-    def __init__(self, cls, filter_list):
+    def __init__(self, cls, filter_list, *args):
         super().__init__()
         self.mod_list = nn.ModuleList()
         for f, f_next in zip(filter_list, filter_list[1:]):
-            self.mod_list.append(cls(f, f_next))
+            self.mod_list.append(cls(f, f_next, *args))
 
     def forward(self, x, *args):
         for mod in self.mod_list:

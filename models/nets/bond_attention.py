@@ -31,11 +31,16 @@ def bond_attention_given(atn_outputs, bonds):
 
 class BondAttentionFixed(nn.Module):
 
+    def __init__(self, one_way):
+        super().__init__()
+        self.one_way = one_way
+
     def forward(self, x, bonds):
         out = torch.zeros_like(x)
         out += x
         for batch, start, end, bond in bonds.get_all_indexes():
             out[batch, end] += x[batch, start]
-            out[batch, start] += x[batch, end]
+            if not self.one_way:
+                out[batch, start] += x[batch, end]
         return out
         
