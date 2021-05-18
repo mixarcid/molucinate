@@ -4,6 +4,7 @@ from torch.nn import functional as F
 import sys
 sys.path.insert(0, '../..')
 from data.chem import *
+from data.tensor_mol import TMCfg
 
 def kl_loss(recon, x, mu, logvar):
     return -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
@@ -45,7 +46,10 @@ def bond_ce_loss(recon, x, mu, logvar):
     x_bonds = x.bonds.data
     recon_bonds = recon_bonds.permute(0, 2, 3, 1)#.contiguous().view(-1, NUM_BOND_TYPES)
     x_bonds = x.bonds.data.permute(0, 2, 3, 1)#.contiguous().view(-1, NUM_BOND_TYPES)
-    multi_idxs = torch.bmm(idxs.unsqueeze(-1), idxs.unsqueeze(-2)).bool().unsqueeze(1).expand(-1, NUM_BOND_TYPES, -1, -1).permute(0, 2, 3, 1)
+    multi_idxs = torch.bmm(idxs.unsqueeze(-1), idxs.unsqueeze(-2)).bool()
+    for i in range(TMCfg.max_atoms):
+        multi_idxs[:,i,i] = False
+    multi_idxs = multi_idxs.unsqueeze(1).expand(-1, NUM_BOND_TYPES, -1, -1).permute(0, 2, 3, 1)
     recon_bonds = recon_bonds[multi_idxs].contiguous().view(-1, NUM_BOND_TYPES)
     x_bonds = x_bonds[multi_idxs].contiguous().view(-1, NUM_BOND_TYPES)
     x_bonds = torch.argmax(x_bonds, -1)

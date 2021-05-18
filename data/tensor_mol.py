@@ -107,11 +107,19 @@ class TensorBonds(Collatable):
                 valence = atom_valences[ai][bi]
                 sorted_idxs = torch.argsort(-bond)
                 sorted_idxs = list(filter(lambda x: idxs[x], sorted_idxs))
-                next_atoms = sorted_idxs[:valence]
+                next_atoms = sorted_idxs
+                cur_val = 0
                 for aj in next_atoms:
-                    #assert(idxs[aj])
-                    if aj > ai:
+                    if out.get_bond_argmax(ai, aj) != BOND_TYPE_HASH['_']:
+                        cur_val += 1
+                targ_val = valence - cur_val
+                for aj in next_atoms:
+                    if targ_val <= 0: break
+                    if out.get_bond_argmax(ai, aj) == BOND_TYPE_HASH['_']:
+                        #assert(idxs[aj])
+                        #if aj > ai:
                         out.add_bond_indexes(bi+1, ai, aj)
+                        targ_val -= 1
         return out
 
 # just stores atom coords, atom types, and bonds
@@ -321,8 +329,21 @@ def test_mol_export():
     print(Chem.MolToSmiles(mol2))
     Draw.MolToFile(mol2, "test_output/mol_3d.png", size=(500, 500))
     Draw.MolToFile(tm.get_mol(False), "test_output/mol_2d.png", size=(500, 500))
-    
+
+def test_bond_recon():
+    from rdkit.Chem import Draw
+    mol = get_test_mol()
+    print(Chem.MolToSmiles(mol))
+    tm = TensorMol(mol)
+    bdata = torch.randn((NUM_BOND_TYPES, TMCfg.max_atoms, TMCfg.max_atoms))
+    bonds = TensorBonds(data=bdata)
+    bonds_a = bonds.argmax(tm.atom_types, tm.atom_valences)
+    tm.bonds = bonds_a
+    mol2 = tm.get_mol()
+    print(Chem.MolToSmiles(mol2))
+    Draw.MolToFile(mol2, "test_output/mol_3d.png", size=(500, 500), kekulize=False)
+    Draw.MolToFile(tm.get_mol(False), "test_output/mol_2d.png", size=(500, 500), kekulize=False)
     
 if __name__ == "__main__":
-    t#est_mol_export()
-    #est_bond_argmax()
+    #test_mol_export()
+    test_bond_recon()
