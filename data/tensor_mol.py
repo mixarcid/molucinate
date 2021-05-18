@@ -270,7 +270,7 @@ class TensorMol(Collatable):
         mol_idxs = []
         idx = 0
         for atom in self.atom_types:
-            if atom != ATOM_TYPE_HASH['_']:
+            if atom not in [ATOM_TYPE_HASH['_'], ATOM_TYPE_HASH['^']]:
                 mol.AddAtom(Chem.Atom(ATOM_TYPE_LIST[atom]))
                 mol_idxs.append(idx)
                 idx += 1
@@ -282,7 +282,7 @@ class TensorMol(Collatable):
         conformer = Chem.Conformer(mol.GetNumAtoms())
         if add_conformer:
             for i, coord in enumerate(coords):
-                if self.atom_types[i] != ATOM_TYPE_HASH['_']:
+                if self.atom_types[i] not in [ATOM_TYPE_HASH['_'], ATOM_TYPE_HASH['^']]:
                     conformer.SetAtomPosition(i, Point3D(float(coords[i][0]),
                                                      float(coords[i][1]),
                                                      float(coords[i][2])))
