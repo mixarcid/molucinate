@@ -115,6 +115,7 @@ class TensorBonds(Collatable):
                 targ_val = valence - cur_val
                 for aj in next_atoms:
                     if targ_val <= 0: break
+                    if ai == aj: continue
                     if out.get_bond_argmax(ai, aj) == BOND_TYPE_HASH['_']:
                         #assert(idxs[aj])
                         #if aj > ai:
