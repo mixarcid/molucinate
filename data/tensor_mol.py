@@ -99,7 +99,7 @@ class TensorBonds(Collatable):
                 out.append(self[i].argmax(atom_types[i], atom_valences[i]))
             return collate(out)
         out = TensorBonds()
-        idxs = atom_types != ATOM_TYPE_HASH["_"]
+        idxs = torch.logical_and(atom_types != ATOM_TYPE_HASH["_"], atom_types != ATOM_TYPE_HASH["^"])
         for bi in range(NUM_ACT_BOND_TYPES):
             for ai in range(TMCfg.max_atoms):
                 if not idxs[ai]: continue
