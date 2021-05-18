@@ -105,8 +105,11 @@ class TensorBonds(Collatable):
                 if not idxs[ai]: continue
                 bond = self.data[bi+1][ai]
                 valence = atom_valences[ai][bi]
-                next_atoms = torch.argsort(-bond)[idxs][:valence]
+                sorted_idxs = torch.argsort(-bond)
+                sorted_idxs = list(filter(lambda x: idxs[x], sorted_idxs))
+                next_atoms = sorted_idxs[:valence]
                 for aj in next_atoms:
+                    #assert(idxs[aj])
                     if aj > ai:
                         out.add_bond_indexes(bi+1, ai, aj)
         return out

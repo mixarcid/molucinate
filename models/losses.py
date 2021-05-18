@@ -41,7 +41,6 @@ def kp_ce_loss(recon, x, mu, logvar):
 
 def bond_ce_loss(recon, x, mu, logvar):
     idxs = (x.atom_types != ATOM_TYPE_HASH["_"]).float()
-    max_atom = torch.amax(idxs)+1
     recon_bonds = recon.bonds.data
     x_bonds = x.bonds.data
     recon_bonds = recon_bonds.permute(0, 2, 3, 1)#.contiguous().view(-1, NUM_BOND_TYPES)
