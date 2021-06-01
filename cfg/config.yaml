@@ -21,7 +21,7 @@ model:
   name: vae
   optimizer: adam
   learn_rate: 1e-4
-  latent_size: 512
+  latent_size: 128
   hidden_size: 512
   net:
     name: atn_net
@@ -45,7 +45,7 @@ model:
     bond_pred_filters: 16
     
   loss:
-    kl_lambda: 0.0
+    kl_lambda: 1.0
     l2_lambda: 1.0
     kp_ce_lambda: 1.0
     atom_ce_lambda: 1.0
