@@ -48,8 +48,7 @@ def transform_coords(coords):
     trans = coords - np.array([0, 0, grid_dims[-1]])
     return np.array([trans[1], trans[0], trans[2]])
 
-def make_bond_cyl(coord1, coord2, bond_type, meshes):
-    alpha = 255
+def make_bond_cyl(coord1, coord2, bond_type, meshes, alpha):
     coord1 = coord1.detach().cpu().numpy()
     coord2 = coord2.detach().cpu().numpy()
     diff = coord1 - coord2
@@ -85,11 +84,10 @@ def make_bond_cyl(coord1, coord2, bond_type, meshes):
             sm.visual.vertex_colors = color
             meshes.append(pyrender.Mesh.from_trimesh(sm))
 
-def get_kp_meshes(tmol):
+def get_kp_meshes(tmol, alpha=255):
 
     coords = tmol.get_coords()
     meshes = []
-    alpha = 255
     for i, enc in enumerate(tmol.atom_types):
         if enc in [ATOM_TYPE_HASH['_'], ATOM_TYPE_HASH['^']]:
             continue
@@ -101,10 +99,10 @@ def get_kp_meshes(tmol):
         tfs[:,:3,3] = transform_coords(coords[i])
         meshes.append(pyrender.Mesh.from_trimesh(sm, poses=tfs))
         if tmol.bonds is None and i > 0:
-                make_bond_cyl(coords[i], coords[i-1], BOND_TYPE_HASH[Chem.BondType.SINGLE], meshes)
+            make_bond_cyl(coords[i], coords[i-1], BOND_TYPE_HASH[Chem.BondType.SINGLE], meshes, alpha)
     if tmol.bonds is not None:
         for start, end, bond in tmol.bonds.get_all_indexes():
-            make_bond_cyl(coords[start], coords[end], bond, meshes)
+            make_bond_cyl(coords[start], coords[end], bond, meshes, alpha)
         
         
     return meshes
@@ -225,12 +223,46 @@ def test_render_tmol():
     img = render_tmol(tm)
     cv2.imshow("mol", img)
     cv2.waitKey(0)
+
+def test_uff():
+    mol = Chem.MolFromMol2File('test_data/zinc100001.mol2')
+    tm1 = TensorMol(mol)
+    sz = TMCfg.grid_size
+    # batch, atom_idx, width, height, depth
+    kp_shape = (TMCfg.max_atoms, sz, sz, sz)
+    #tm1.kps_1h = torch.zeros(kp_shape)
+    mol = tm1.get_mol()
+    Chem.SanitizeMol(mol)
+    #mol = Chem.AddHs(mol)
+    #print(AllChem.EmbedMolecule(mol))
+    tm1 = TensorMol(mol)
+    for i in range(mol.GetNumAtoms()):
+        print(i, mol.GetConformer().GetAtomPosition(i).x,
+              mol.GetConformer().GetAtomPosition(i).y,
+              mol.GetConformer().GetAtomPosition(i).z)
+    print(AllChem.UFFOptimizeMolecule(mol))
+    for i in range(mol.GetNumAtoms()):
+        print(i, mol.GetConformer().GetAtomPosition(i).x,
+              mol.GetConformer().GetAtomPosition(i).y,
+              mol.GetConformer().GetAtomPosition(i).z)
+    tm2 = TensorMol(mol)
+    print((tm1.get_coords() == tm2.get_coords()).all())
+
+    mol_orig = tm1.get_mol()
+    print(Chem.rdMolAlign.AlignMol(mol, mol_orig))
+    
+    meshes = get_kp_meshes(tm1)
+    meshes += get_kp_meshes(tm2, 128)
+    scene = pyrender.Scene()
+    for mesh in meshes:
+        scene.add(mesh)
+    pyrender.Viewer(scene, use_raymond_lighting=True)
     
 if __name__ == "__main__":
     from omegaconf import OmegaConf
     from tensor_mol import TensorMol
     from utils import rand_rotation_matrix
-    from rdkit.Chem import rdMolTransforms
+    from rdkit.Chem import rdMolTransforms, AllChem, rdMolAlign
     cfg = OmegaConf.create({
         'grid_dim': 16,
         'grid_step': 0.5,
@@ -238,5 +270,6 @@ if __name__ == "__main__":
         'max_valence': 6
     })
     TMCfg.set_cfg(cfg)
-    test_render_tmol()
+    test_uff()
+    #test_render_tmol()
     #test_kp()

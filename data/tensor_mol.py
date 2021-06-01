@@ -283,9 +283,9 @@ class TensorMol(Collatable):
         if add_conformer:
             for i, coord in enumerate(coords):
                 if self.atom_types[i] not in [ATOM_TYPE_HASH['_'], ATOM_TYPE_HASH['^']]:
-                    conformer.SetAtomPosition(i, Point3D(float(coords[i][0]),
-                                                     float(coords[i][1]),
-                                                     float(coords[i][2])))
+                    conformer.SetAtomPosition(mol_idxs[i], Point3D(float(coords[i][0]),
+                                                                   float(coords[i][1]),
+                                                                   float(coords[i][2])))
             mol.AddConformer(conformer)
         return mol
 
