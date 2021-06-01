@@ -43,7 +43,7 @@ class MolCallback(Callback):
             self.checkpoint_imgs(trainer, "recon", fname, [[mg_img, recon_mg_img]])
         metrics = get_gen_metrics(gen)
         for name, metric in metrics.items():
-            if trainer.logger: trainer.logger.log({f'gen_{name}': metric}, step=trainer.global_step)
+            if trainer.logger: trainer.logger.log_metrics({f'gen_{name}': metric}, step=trainer.global_step)
 
     def cb(self, trainer, pl_module):
         trainer.model.eval()
