@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 from .nets.make_net import make_encoder, make_decoder
 from .losses import get_loss_fn
+from .metrics import get_recon_metrics
 
 class VAE(pl.LightningModule):
 
@@ -48,6 +49,9 @@ class VAE(pl.LightningModule):
         self.log('train_loss', loss, prog_bar=True)
         for name, term in terms.items():
             self.log(f'train_{name}_loss', term)
+        metrics = get_recon_metrics(recon, batch)
+        for name, metric in metrics.items():
+            self.log(f'train_{name}_loss', metric)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -72,4 +76,7 @@ class VAE(pl.LightningModule):
         self.log(f'{prefix}_loss', loss, prog_bar=True)
         for name, term in terms.items():
             self.log(f'{prefix}_{name}_loss', term)
+        metrics = get_recon_metrics(recon, batch)
+        for name, metric in metrics.items():
+            self.log(f'{prefix}_{name}_loss', metric)
         return loss

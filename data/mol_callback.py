@@ -2,6 +2,7 @@ import pytorch_lightning as pl
 import torch
 from pytorch_lightning.callbacks import *
 
+from models.metrics import get_gen_metrics
 from .render import *
 
 class MolCallback(Callback):
@@ -10,7 +11,7 @@ class MolCallback(Callback):
         super(MolCallback, self).__init__()
         self.name = gcfg.name
         self.cb_n_batches = gcfg.debug.cb_n_batches
-        self.batch_size = 2#gcfg.batch_size
+        self.batch_size = gcfg.batch_size
         self.latent_size = gcfg.model.latent_size
         self.results_path = gcfg.platform.results_path
         self.n = 0
@@ -40,6 +41,9 @@ class MolCallback(Callback):
                                             batch_idx*self.batch_size+i)
             self.checkpoint_imgs(trainer, "gen", fname, [[gen_mg_img]])
             self.checkpoint_imgs(trainer, "recon", fname, [[mg_img, recon_mg_img]])
+        metrics = get_gen_metrics(gen)
+        for name, metric in metrics.items():
+            self.log(f'gen_{name}', metric)
 
     def cb(self, trainer, pl_module):
         trainer.model.eval()
