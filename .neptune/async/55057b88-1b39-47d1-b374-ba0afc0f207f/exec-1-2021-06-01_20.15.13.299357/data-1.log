@@ -1,6 +1,0 @@
-{"obj": {"type": "LogStrings", "path": ["monitoring", "stdout"], "values": [{"value": "", "step": null, "ts": 1622603713.544443}]}, "version": 1}
-{"obj": {"type": "LogStrings", "path": ["monitoring", "stdout"], "values": [{"value": "https://ui.neptune.ai/mixarcid/molucinate/e/MOL-148\n", "step": null, "ts": 1622603713.5446112}]}, "version": 2}
-{"obj": {"type": "LogFloats", "path": ["monitoring", "cpu"], "values": [{"value": 2.4, "step": null, "ts": 1622603713.541385}]}, "version": 3}
-{"obj": {"type": "LogFloats", "path": ["monitoring", "memory"], "values": [{"value": 6.52191162109375, "step": null, "ts": 1622603713.541385}]}, "version": 4}
-{"obj": {"type": "LogFloats", "path": ["monitoring", "gpu_memory"], "values": [{"value": 0.13604736328125, "step": null, "ts": 1622603713.541385}]}, "version": 5}
-{"obj": {"type": "LogStrings", "path": ["monitoring", "stdout"], "values": [{"value": "Shutting down background jobs, please wait a moment...\n", "step": null, "ts": 1622603714.7148647}]}, "version": 6}

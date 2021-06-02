@@ -1,8 +1,0 @@
-{"obj": {"type": "AssignString", "path": ["source_code", "entrypoint"], "value": "test.py"}, "version": 1}
-{"obj": {"type": "UploadFileSet", "path": ["source_code", "files"], "file_globs": ["/home/boris/Repos/molucinate/test.py"], "reset": "False"}, "version": 2}
-{"obj": {"type": "LogStrings", "path": ["monitoring", "stdout"], "values": [{"value": "", "step": null, "ts": 1622603308.03708}]}, "version": 3}
-{"obj": {"type": "LogStrings", "path": ["monitoring", "stdout"], "values": [{"value": "https://ui.neptune.ai/mixarcid/molucinate/e/MOL-148\n", "step": null, "ts": 1622603308.0375996}]}, "version": 4}
-{"obj": {"type": "LogFloats", "path": ["monitoring", "cpu"], "values": [{"value": 5.5, "step": null, "ts": 1622603308.0337214}]}, "version": 5}
-{"obj": {"type": "LogFloats", "path": ["monitoring", "memory"], "values": [{"value": 6.818580627441406, "step": null, "ts": 1622603308.0337214}]}, "version": 6}
-{"obj": {"type": "LogFloats", "path": ["monitoring", "gpu"], "values": [{"value": 10.0, "step": null, "ts": 1622603308.0337214}]}, "version": 7}
-{"obj": {"type": "LogFloats", "path": ["monitoring", "gpu_memory"], "values": [{"value": 0.13604736328125, "step": null, "ts": 1622603308.0337214}]}, "version": 8}

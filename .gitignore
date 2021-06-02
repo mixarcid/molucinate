@@ -15,6 +15,7 @@ checkpoints/*
 logs/*
 test_output/*
 results/*
+.neptune/*
 !*/.gitkeep
 tmp.sh
 cfg/platform/local.yaml
