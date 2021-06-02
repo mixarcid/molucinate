@@ -25,7 +25,7 @@ data:
 model:
   name: vae
   optimizer: adam
-  learn_rate: 1e-4
+  learn_rate: 1e-3
   latent_size: 128
   hidden_size: 512
   net:
