@@ -51,6 +51,7 @@ def embed_rmsd(gen):
             rmsd = Chem.rdMolAlign.AlignMol(mol, mol_uff)
             if rmsd != 0:
                 rets.append(rmsd)
+                print(rmsd)
     return torch.mean(torch.tensor(rets))
 
 def get_recon_metrics(recon, x):

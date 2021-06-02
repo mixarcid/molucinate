@@ -1,0 +1,78 @@
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stdout"], "values": [{"value": "", "step": null, "ts": 1622603729.909224}]}, "version": 1}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stdout"], "values": [{"value": "https://ui.neptune.ai/mixarcid/molucinate/e/MOL-148\n", "step": null, "ts": 1622603729.9095483}]}, "version": 2}
+{"obj": {"type": "LogFloats", "path": ["monitoring", "cpu"], "values": [{"value": 2.4, "step": null, "ts": 1622603729.9046097}]}, "version": 3}
+{"obj": {"type": "LogFloats", "path": ["monitoring", "memory"], "values": [{"value": 6.478668212890625, "step": null, "ts": 1622603729.9046097}]}, "version": 4}
+{"obj": {"type": "LogFloats", "path": ["monitoring", "gpu_memory"], "values": [{"value": 0.13604736328125, "step": null, "ts": 1622603729.9046097}]}, "version": 5}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stdout"], "values": [{"value": "", "step": null, "ts": 1622603734.919084}]}, "version": 6}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stdout"], "values": [{"value": "https://ui.neptune.ai/mixarcid/molucinate/e/MOL-148\n", "step": null, "ts": 1622603734.9698074}]}, "version": 7}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "Unexpected error occurred in Neptune background thread: Killing Neptune asynchronous thread. All data is safe on disk and can be later synced manually using `neptune sync` command.\n", "step": null, "ts": 1622603735.2271042}]}, "version": 8}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "Exception in thread ", "step": null, "ts": 1622603735.227936}]}, "version": 9}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "Thread-1", "step": null, "ts": 1622603735.2285218}]}, "version": 10}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": ":\n", "step": null, "ts": 1622603735.2290995}]}, "version": 11}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "Traceback (most recent call last):\n", "step": null, "ts": 1622603735.2296717}]}, "version": 12}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "  File \"/home/boris/miniconda3/envs/chem/lib/python3.8/threading.py\", line 932, in _bootstrap_inner\n", "step": null, "ts": 1622603735.2304578}]}, "version": 13}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "    ", "step": null, "ts": 1622603735.2318046}]}, "version": 14}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "self.run()", "step": null, "ts": 1622603735.2324014}]}, "version": 15}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "\n", "step": null, "ts": 1622603735.232966}]}, "version": 16}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "  File \"/home/boris/miniconda3/envs/chem/lib/python3.8/site-packages/neptune/new/internal/threading/daemon.py\", line 54, in run\n", "step": null, "ts": 1622603735.2335386}]}, "version": 17}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "    ", "step": null, "ts": 1622603735.234343}]}, "version": 18}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "self.work()", "step": null, "ts": 1622603735.234907}]}, "version": 19}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "\n", "step": null, "ts": 1622603735.2354705}]}, "version": 20}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "  File \"/home/boris/miniconda3/envs/chem/lib/python3.8/site-packages/neptune/new/internal/operation_processors/async_operation_processor.py\", line 181, in work\n", "step": null, "ts": 1622603735.2360451}]}, "version": 21}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "    ", "step": null, "ts": 1622603735.2368836}]}, "version": 22}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "self.process_batch(batch, version)", "step": null, "ts": 1622603735.2374709}]}, "version": 23}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "\n", "step": null, "ts": 1622603735.2380424}]}, "version": 24}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "  File \"/home/boris/miniconda3/envs/chem/lib/python3.8/site-packages/neptune/new/internal/threading/daemon.py\", line 78, in wrapper\n", "step": null, "ts": 1622603735.238632}]}, "version": 25}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "    ", "step": null, "ts": 1622603735.2394311}]}, "version": 26}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "result = func(self_, *args, **kwargs)", "step": null, "ts": 1622603735.239986}]}, "version": 27}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "\n", "step": null, "ts": 1622603735.2405753}]}, "version": 28}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "  File \"/home/boris/miniconda3/envs/chem/lib/python3.8/site-packages/neptune/new/internal/operation_processors/async_operation_processor.py\", line 192, in process_batch\n", "step": null, "ts": 1622603735.2411928}]}, "version": 29}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "    ", "step": null, "ts": 1622603735.2420294}]}, "version": 30}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "self._processor._queue.ack(version)", "step": null, "ts": 1622603735.242586}]}, "version": 31}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "\n", "step": null, "ts": 1622603735.243146}]}, "version": 32}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "  File \"/home/boris/miniconda3/envs/chem/lib/python3.8/site-packages/neptune/new/internal/containers/disk_queue.py\", line 152, in ack\n", "step": null, "ts": 1622603735.243715}]}, "version": 33}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "    ", "step": null, "ts": 1622603735.2445688}]}, "version": 34}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "os.remove(self._get_log_file(log_versions[i]))", "step": null, "ts": 1622603735.2451286}]}, "version": 35}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "\n", "step": null, "ts": 1622603735.245691}]}, "version": 36}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "FileNotFoundError", "step": null, "ts": 1622603735.2462392}]}, "version": 37}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": ": ", "step": null, "ts": 1622603735.2467866}]}, "version": 38}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "[Errno 2] No such file or directory: '.neptune/async/55057b88-1b39-47d1-b374-ba0afc0f207f/exec-2-2021-06-01_20.15.29.684158/data-1.log'", "step": null, "ts": 1622603735.24734}]}, "version": 39}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "\n", "step": null, "ts": 1622603735.2479148}]}, "version": 40}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stdout"], "values": [{"value": "Shutting down background jobs, please wait a moment...\n", "step": null, "ts": 1622603735.8023286}]}, "version": 41}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stdout"], "values": [{"value": "Done!\n", "step": null, "ts": 1622603736.0303228}]}, "version": 42}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "Waiting for the remaining 39 operations to synchronize with Neptune. Do not kill this process.\n", "step": null, "ts": 1622603736.0307672}]}, "version": 43}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stdout"], "values": [{"value": "All 39 operations synced, thanks for waiting!\n", "step": null, "ts": 1622603736.4411454}]}, "version": 44}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "Unexpected error occurred in Neptune background thread: Killing Neptune asynchronous thread. All data is safe on disk and can be later synced manually using `neptune sync` command.\n", "step": null, "ts": 1622603736.4421535}]}, "version": 45}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "Exception in thread ", "step": null, "ts": 1622603736.4426188}]}, "version": 46}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "Thread-5", "step": null, "ts": 1622603736.4429467}]}, "version": 47}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": ":\n", "step": null, "ts": 1622603736.4432745}]}, "version": 48}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "Traceback (most recent call last):\n", "step": null, "ts": 1622603736.443678}]}, "version": 49}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "  File \"/home/boris/miniconda3/envs/chem/lib/python3.8/threading.py\", line 932, in _bootstrap_inner\n", "step": null, "ts": 1622603736.444031}]}, "version": 50}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "    ", "step": null, "ts": 1622603736.4450548}]}, "version": 51}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "self.run()", "step": null, "ts": 1622603736.445368}]}, "version": 52}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "\n", "step": null, "ts": 1622603736.4456775}]}, "version": 53}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "  File \"/home/boris/miniconda3/envs/chem/lib/python3.8/site-packages/neptune/new/internal/threading/daemon.py\", line 54, in run\n", "step": null, "ts": 1622603736.4459922}]}, "version": 54}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "    ", "step": null, "ts": 1622603736.446504}]}, "version": 55}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "self.work()", "step": null, "ts": 1622603736.4467971}]}, "version": 56}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "\n", "step": null, "ts": 1622603736.4470968}]}, "version": 57}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "  File \"/home/boris/miniconda3/envs/chem/lib/python3.8/site-packages/neptune/new/internal/operation_processors/async_operation_processor.py\", line 181, in work\n", "step": null, "ts": 1622603736.4474382}]}, "version": 58}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "    ", "step": null, "ts": 1622603736.44801}]}, "version": 59}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "self.process_batch(batch, version)", "step": null, "ts": 1622603736.448302}]}, "version": 60}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "\n", "step": null, "ts": 1622603736.4485996}]}, "version": 61}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "  File \"/home/boris/miniconda3/envs/chem/lib/python3.8/site-packages/neptune/new/internal/threading/daemon.py\", line 78, in wrapper\n", "step": null, "ts": 1622603736.4489052}]}, "version": 62}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "    ", "step": null, "ts": 1622603736.4494112}]}, "version": 63}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "result = func(self_, *args, **kwargs)", "step": null, "ts": 1622603736.4496975}]}, "version": 64}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "\n", "step": null, "ts": 1622603736.4499931}]}, "version": 65}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "  File \"/home/boris/miniconda3/envs/chem/lib/python3.8/site-packages/neptune/new/internal/operation_processors/async_operation_processor.py\", line 192, in process_batch\n", "step": null, "ts": 1622603736.4503}]}, "version": 66}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "    ", "step": null, "ts": 1622603736.4508843}]}, "version": 67}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "self._processor._queue.ack(version)", "step": null, "ts": 1622603736.4511766}]}, "version": 68}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "\n", "step": null, "ts": 1622603736.4514735}]}, "version": 69}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "  File \"/home/boris/miniconda3/envs/chem/lib/python3.8/site-packages/neptune/new/internal/containers/disk_queue.py\", line 152, in ack\n", "step": null, "ts": 1622603736.4517775}]}, "version": 70}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "    ", "step": null, "ts": 1622603736.4523165}]}, "version": 71}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "os.remove(self._get_log_file(log_versions[i]))", "step": null, "ts": 1622603736.4526021}]}, "version": 72}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "\n", "step": null, "ts": 1622603736.4528983}]}, "version": 73}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "FileNotFoundError", "step": null, "ts": 1622603736.4531782}]}, "version": 74}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": ": ", "step": null, "ts": 1622603736.453454}]}, "version": 75}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "[Errno 2] No such file or directory: '.neptune/async/55057b88-1b39-47d1-b374-ba0afc0f207f/exec-0-2021-06-01_20.15.34.598493/data-1.log'", "step": null, "ts": 1622603736.4537232}]}, "version": 76}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stderr"], "values": [{"value": "\n", "step": null, "ts": 1622603736.4540424}]}, "version": 77}
+{"obj": {"type": "LogStrings", "path": ["monitoring", "stdout"], "values": [{"value": "Shutting down background jobs, please wait a moment...\n", "step": null, "ts": 1622603736.454725}]}, "version": 78}

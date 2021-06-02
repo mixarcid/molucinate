@@ -1,31 +1,18 @@
 name: test
-
-hydra:
-  run:
-    dir: ./
-
 debug:
   cb_n_batches: 16
   checkpoint_n_batches: 64
   stop_at: null
   save_img: false
-
-# data:
-#   grid_dim: 16
-#   grid_step: 0.5
-#   max_atoms: 38
-#   max_valence: 6
-
 data:
   grid_dim: 8
   grid_step: 0.5
   max_atoms: 8
   max_valence: 6
-
 model:
   name: vae
   optimizer: adam
-  learn_rate: 1e-4
+  learn_rate: 0.0001
   latent_size: 128
   hidden_size: 512
   net:
@@ -35,20 +22,18 @@ model:
     valence_embed_size: 32
     valence_enc_size: 32
     kp_filter_list:
-      - 2
-      - 4
-      - 8
+    - 2
+    - 4
+    - 8
     kp_enc_size: 128
     final_enc_size: 128
     num_gru_layers: 1
     num_gru_directions: 1
     enc_rnn_size: 128
-
     dec_lat_fc_size: 128
     dec_rnn_size: 128
     initial_dec_size: 128
     bond_pred_filters: 16
-    
   loss:
     kl_lambda: 1.0
     l2_lambda: 1.0
@@ -56,12 +41,11 @@ model:
     atom_ce_lambda: 1.0
     bond_ce_lambda: 1.0
     valence_ce_lambda: 1.0
-
 dataset: zinc
 batch_size: 32
 grad_clip: 0
-
 test_run_id: MOL-148
-
-defaults:
-  - platform: local
+platform:
+  num_workers: 8
+  zinc_dir: /home/boris/Data/Zinc/
+  results_path: /home/boris/Data/mol-results/

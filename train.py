@@ -26,6 +26,7 @@ RDLogger.DisableLog('rdApp.*')
 
 from data.tensor_mol import TMCfg
 from data.mol_callback import MolCallback
+from data.checkpoint_callback import CheckpointCallback
 from data.dataloader import DataLoader
 from data.make_dataset import make_dataset
 from models.make_model import make_model
@@ -110,9 +111,10 @@ def train(cfg):
 
     checkpoint_callback = None
     mol_cb = MolCallback(cfg)
+    checkpoint_cb = CheckpointCallback(cfg)
     trainer = pl.Trainer(gpus=int(torch.cuda.is_available()),
                          checkpoint_callback=checkpoint_callback,
-                         callbacks = [mol_cb],
+                         callbacks = [mol_cb, checkpoint_cb],
                          logger=logger,
                          gradient_clip_val=cfg.grad_clip)
     trainer.fit(model, train_loader, test_loader)
