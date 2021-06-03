@@ -61,7 +61,9 @@ dataset: zinc
 batch_size: 32
 grad_clip: 0
 
-test_run_id: MOL-148
+test:
+  run_id: MOL-148
+  use_cache: false
 
 defaults:
   - platform: local

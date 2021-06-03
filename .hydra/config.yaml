@@ -12,7 +12,7 @@ data:
 model:
   name: vae
   optimizer: adam
-  learn_rate: 0.0001
+  learn_rate: 0.001
   latent_size: 128
   hidden_size: 512
   net:
@@ -44,7 +44,9 @@ model:
 dataset: zinc
 batch_size: 32
 grad_clip: 0
-test_run_id: MOL-148
+test:
+  run_id: MOL-149
+  use_cache: true
 platform:
   num_workers: 8
   zinc_dir: /home/boris/Data/Zinc/

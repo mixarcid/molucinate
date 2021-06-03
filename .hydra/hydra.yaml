@@ -105,10 +105,12 @@ hydra:
   output_subdir: .hydra
   overrides:
     hydra: []
-    task: []
+    task:
+    - test.run_id=MOL-149
+    - test.use_cache=true
   job:
     name: test
-    override_dirname: ''
+    override_dirname: test.run_id=MOL-149,test.use_cache=true
     id: ???
     num: ???
     config_name: config
