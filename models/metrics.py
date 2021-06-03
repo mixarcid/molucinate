@@ -44,7 +44,6 @@ def get_gen_metrics(gen):
                     pass
             except:
                 pass
-        rmsds.append(rmsd)
         geom_valids.append(geom_valid)
         topo_valids.append(topo_valid)
     return {
