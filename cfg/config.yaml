@@ -5,8 +5,8 @@ hydra:
     dir: ./
 
 debug:
-  cb_n_batches: 16
-  checkpoint_n_batches: 64
+  cb_n_batches: 32
+  checkpoint_n_batches: 128
   stop_at: null
   save_img: false
 
