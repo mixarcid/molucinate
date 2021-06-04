@@ -5,6 +5,7 @@
 *.dat
 *__pycache__/*
 *.pyc
+*.hydra/*
 .ipynb_checkpoints
 config/default.yml
 config/global.yml
