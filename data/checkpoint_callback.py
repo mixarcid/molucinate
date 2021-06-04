@@ -14,7 +14,10 @@ class CheckpointCallback(Callback):
         if trainer.logger:
             path = f"{self.results_path}{self.name}.pt"
             torch.save(trainer.model.state_dict(), path)
-            trainer.logger.experiment.log_artifact(path, "weights.pt")
+            try:
+                trainer.logger.experiment.log_artifact(path, "weights.pt")
+            except:
+                pass
     
     def on_batch_end(self, trainer, pl_module):
         if self.checkpoint_n_batches is None: return
