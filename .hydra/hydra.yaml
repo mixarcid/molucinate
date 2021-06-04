@@ -106,11 +106,12 @@ hydra:
   overrides:
     hydra: []
     task:
-    - test.run_id=MOL-149
-    - test.use_cache=true
+    - debug.stop_at=10
+    - debug.cb_n_batches=1
+    - batch_size=2
   job:
-    name: test
-    override_dirname: test.run_id=MOL-149,test.use_cache=true
+    name: train
+    override_dirname: batch_size=2,debug.cb_n_batches=1,debug.stop_at=10
     id: ???
     num: ???
     config_name: config

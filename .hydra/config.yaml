@@ -1,8 +1,8 @@
 name: test
 debug:
-  cb_n_batches: 16
+  cb_n_batches: 1
   checkpoint_n_batches: 64
-  stop_at: null
+  stop_at: 10
   save_img: false
 data:
   grid_dim: 8
@@ -42,11 +42,11 @@ model:
     bond_ce_lambda: 1.0
     valence_ce_lambda: 1.0
 dataset: zinc
-batch_size: 32
+batch_size: 2
 grad_clip: 0
 test:
-  run_id: MOL-149
-  use_cache: true
+  run_id: MOL-148
+  use_cache: false
 platform:
   num_workers: 8
   zinc_dir: /home/boris/Data/Zinc/
