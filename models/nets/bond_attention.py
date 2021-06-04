@@ -41,6 +41,5 @@ class BondAttentionFixed(nn.Module):
             out[batch, end] += x[batch, start]
             if not self.one_way:
                 out[batch, start] += x[batch, end]
-        print(out.shape, torch.cat([out, x], 2).shape)
         return torch.cat([out, x], 2)
         
