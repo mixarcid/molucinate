@@ -5,8 +5,8 @@ hydra:
     dir: ./
 
 debug:
-  cb_n_batches: 16
-  checkpoint_n_batches: 64
+  cb_n_batches: 32
+  checkpoint_n_batches: 128
   stop_at: null
   save_img: false
 
@@ -61,7 +61,9 @@ dataset: zinc
 batch_size: 32
 grad_clip: 0
 
-test_run_id: MOL-148
+test:
+  run_id: MOL-148
+  use_cache: false
 
 defaults:
   - platform: local

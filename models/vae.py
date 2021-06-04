@@ -51,7 +51,7 @@ class VAE(pl.LightningModule):
             self.log(f'train_{name}_loss', term)
         metrics = get_recon_metrics(recon, batch)
         for name, metric in metrics.items():
-            self.log(f'train_{name}_loss', metric)
+            self.log(f'train_{name}', metric)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -78,5 +78,5 @@ class VAE(pl.LightningModule):
             self.log(f'{prefix}_{name}_loss', term)
         metrics = get_recon_metrics(recon, batch)
         for name, metric in metrics.items():
-            self.log(f'{prefix}_{name}_loss', metric)
+            self.log(f'{prefix}_{name}', metric)
         return loss

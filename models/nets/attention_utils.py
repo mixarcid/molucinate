@@ -12,7 +12,7 @@ class AtnDownConv(nn.Module):
         self.atn = BondAttentionFixed(one_way)
         self.conv = TimeDistributed(
             nn.Sequential(
-                nn.Conv3d(in_f, out_f, kernel_size=3, bias=False, padding=1),
+                nn.Conv3d(in_f*2, out_f, kernel_size=3, bias=False, padding=1),
                 nn.BatchNorm3d(out_f),
                 nn.LeakyReLU(LEAK_VALUE),
                 downsample(),
@@ -31,7 +31,7 @@ class AtnUpConv(nn.Module):
         self.atn = BondAttentionFixed(one_way)
         self.conv = TimeDistributed(
             nn.Sequential(
-                upsample(in_f, out_f),
+                upsample(in_f*2, out_f),
                 nn.Conv3d(out_f, out_f, kernel_size=3, bias=False, padding=1),
                 nn.BatchNorm3d(out_f),
                 nn.LeakyReLU(LEAK_VALUE),
@@ -50,7 +50,7 @@ class AtnFlat(nn.Module):
         self.atn = atn_cls(*args)
         self.linear = TimeDistributed(
             nn.Sequential(
-                nn.Linear(in_filters, out_filters, bias=False),
+                nn.Linear(in_filters*2, out_filters, bias=False),
                 nn.BatchNorm1d(out_filters),
                 nn.LeakyReLU(LEAK_VALUE)
             ),
