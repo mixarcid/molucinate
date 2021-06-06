@@ -29,7 +29,7 @@ model:
   latent_size: 512
   hidden_size: 512
   net:
-    name: atn_net
+    name: ar_net
     atom_embed_size: 32
     atom_enc_size: 32
     valence_embed_size: 32

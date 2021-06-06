@@ -25,6 +25,8 @@ def get_recon_metrics(recon, x):
     return ret
 
 def get_gen_metrics(gen):
+    if gen.kps_1h is None:
+        return {}
     rmsds = []
     topo_valids = []
     geom_valids = []
