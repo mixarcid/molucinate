@@ -26,7 +26,7 @@ model:
   name: vae
   optimizer: adam
   learn_rate: 1e-3
-  latent_size: 128
+  latent_size: 512
   hidden_size: 512
   net:
     name: atn_net
@@ -58,7 +58,7 @@ model:
     valence_ce_lambda: 1.0
 
 dataset: zinc
-batch_size: 32
+batch_size: 64
 grad_clip: 0
 
 test:

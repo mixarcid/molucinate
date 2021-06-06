@@ -5,13 +5,16 @@ from rdkit.Chem import AllChem, rdMolAlign
 
 import sys
 sys.path.insert(0, '../..')
+from data.chem import *
 from data.tensor_mol import TensorMol, TMCfg
 
 def rmsd(recon, x):
     rets = []
+    idxs = x.atom_types != ATOM_TYPE_HASH["_"]
     #todo: only rmsd actual atoms
     for batch in range(x.kps_1h.size(0)):
-        sd = (recon[batch].get_coords() - x[batch].get_coords())**2
+        idx = idxs[batch]
+        sd = (recon[batch].get_coords()[idx] - x[batch].get_coords()[idx])**2
         rets.append(torch.sqrt(torch.mean(sd)))
     return torch.mean(torch.tensor(rets))
 
