@@ -19,7 +19,7 @@ debug:
 data:
   grid_dim: 8
   grid_step: 0.5
-  max_atoms: 8
+  max_atoms: 16
   max_valence: 6
 
 model:
