@@ -7,9 +7,9 @@ from .bond_attention import *
 
 class AtnDownConv(nn.Module):
 
-    def __init__(self, in_f, out_f, one_way):
+    def __init__(self, in_f, out_f, *args):
         super().__init__()
-        self.atn = BondAttentionFixed(one_way)
+        self.atn = BondAttentionFixed(*args)
         self.conv = TimeDistributed(
             nn.Sequential(
                 nn.Conv3d(in_f*2, out_f, kernel_size=3, bias=False, padding=1),
@@ -20,15 +20,15 @@ class AtnDownConv(nn.Module):
             axis=2
         )
 
-    def forward(self, x, bonds):
-        x = self.atn(x, bonds)
+    def forward(self, x, *args):
+        x = self.atn(x, *args)
         return self.conv(x)
 
 class AtnUpConv(nn.Module):
 
-    def __init__(self, in_f, out_f, one_way):
+    def __init__(self, in_f, out_f, *args):
         super().__init__()
-        self.atn = BondAttentionFixed(one_way)
+        self.atn = BondAttentionFixed(*args)
         self.conv = TimeDistributed(
             nn.Sequential(
                 upsample(in_f*2, out_f),
@@ -39,8 +39,8 @@ class AtnUpConv(nn.Module):
             axis=2
         )
 
-    def forward(self, x, bonds):
-        x = self.atn(x, bonds)
+    def forward(self, x, *args):
+        x = self.atn(x, *args)
         return self.conv(x)
 
 class AtnFlat(nn.Module):

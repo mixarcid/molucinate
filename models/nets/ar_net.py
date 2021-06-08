@@ -102,20 +102,20 @@ class ArNetDecoder(nn.Module):
 
         atypes = get_padded_atypes(tmol, device, batch_size, truncate_atoms)
         aenc = self.atom_embed(atypes)
-        aenc = self.atom_enc(aenc, tmol.bonds)
+        aenc = self.atom_enc(aenc, tmol.bonds, True)
 
         valences = get_padded_valences(tmol, device, batch_size, truncate_atoms)
         venc = self.valence_embed(valences, device)
-        venc = self.valence_enc(venc, tmol.bonds)
+        venc = self.valence_enc(venc, tmol.bonds, True)
         
         kpenc = get_padded_kps(tmol, device, batch_size, truncate_atoms)
         kpenc = self.kp_init_enc(kpenc)
-        kpenc = self.kp_enc(kpenc, tmol.bonds)
+        kpenc = self.kp_enc(kpenc, tmol.bonds, True)
         kpenc = kpenc.contiguous().view(kpenc.size(0), kpenc.size(1), -1)
-        kpenc = self.kp_flat_enc(kpenc, tmol.bonds)
+        kpenc = self.kp_flat_enc(kpenc, tmol.bonds, True)
 
         enc = torch.cat((aenc, venc, kpenc), 2)
-        enc = self.final_enc(enc, tmol.bonds)
+        enc = self.final_enc(enc, tmol.bonds, True)
 
         lat_in = self.lat_fc(z).unsqueeze(1).repeat(1, atypes.size(1), 1)
         rnn_in = torch.cat([lat_in, enc], 2)
