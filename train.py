@@ -102,8 +102,8 @@ def train(cfg):
     if cfg.debug.save_img:
         batch = next(iter(train_loader))
         mu, logvar = model(batch)
-        y = model.decode(mu)
-        dot = make_dot(y.molgrid)
+        y = model.decode(mu, batch)
+        dot = make_dot(y.kps_1h)
         out_fname = 'model.pdf'
         print(os.path.abspath(out_fname))
         f = dot.render('.'.join(out_fname.split('.')[:-1]), format='pdf')

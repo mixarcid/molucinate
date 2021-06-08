@@ -2433,3 +2433,18 @@ Traceback (most recent call last):
   File "/home/jack/.local/lib/python3.8/site-packages/bravado/http_future.py", line 408, in raise_on_unexpected
     raise make_http_exception(response=http_response)
 bravado.exception.HTTPServiceUnavailable: 503 Service Unavailable: {"code":503,"title":"Service is not available. Try again later.","errorType":"SERVICE_UNAVAILABLE"}
+[2021-06-07 19:50:04,252][trimesh][WARNING] - unable to use sparse matrix, falling back!
+Traceback (most recent call last):
+  File "/home/boris/miniconda3/envs/chem/lib/python3.8/site-packages/trimesh/geometry.py", line 379, in weighted_vertex_normals
+    return util.unitize(summed_sparse())
+  File "/home/boris/miniconda3/envs/chem/lib/python3.8/site-packages/trimesh/geometry.py", line 349, in summed_sparse
+    matrix = index_sparse(vertex_count, faces).astype(np.float64)
+  File "/home/boris/miniconda3/envs/chem/lib/python3.8/site-packages/scipy/sparse/data.py", line 72, in astype
+    self._deduped_data().astype(dtype, casting=casting, copy=copy),
+  File "/home/boris/miniconda3/envs/chem/lib/python3.8/site-packages/scipy/sparse/data.py", line 32, in _deduped_data
+    self.sum_duplicates()
+  File "/home/boris/miniconda3/envs/chem/lib/python3.8/site-packages/scipy/sparse/coo.py", line 533, in sum_duplicates
+    summed = self._sum_duplicates(self.row, self.col, self.data)
+  File "/home/boris/miniconda3/envs/chem/lib/python3.8/site-packages/scipy/sparse/coo.py", line 549, in _sum_duplicates
+    col = col[unique_mask]
+KeyboardInterrupt

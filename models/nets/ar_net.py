@@ -43,7 +43,7 @@ class ArNetDecoder(nn.Module):
             axis=2
         )
         self.kp_enc = IterativeSequential(
-            AtnDownConv, cfg.kp_filter_list, False
+            AtnDownConv, cfg.kp_filter_list, True
         )
         mul = get_linear_mul(cfg.kp_filter_list)
         self.kp_flat_enc = AtnFlat(mul*cfg.kp_filter_list[-1],
@@ -54,8 +54,6 @@ class ArNetDecoder(nn.Module):
         self.final_enc = AtnFlat(final_enc_size,
                                  cfg.final_enc_size,
                                  BondAttentionFixed, True)
-
-        self.bidirectional = (cfg.num_gru_directions==2)
         
         self.lat_fc = nn.Sequential(
             nn.Linear(latent_size, cfg.dec_lat_fc_size, bias=False),
@@ -66,18 +64,18 @@ class ArNetDecoder(nn.Module):
                           cfg.dec_rnn_size,
                           num_layers=cfg.num_gru_layers,
                           batch_first=True,
-                          bidirectional=(cfg.num_gru_directions==2))
-        self.bond_pred = BondPredictor(cfg.dec_rnn_size*cfg.num_gru_directions,
+                          bidirectional=False)
+        self.bond_pred = BondPredictor(cfg.dec_rnn_size,
                                        cfg.bond_pred_filters)
-        self.initial_dec = AtnFlat(cfg.dec_rnn_size*cfg.num_gru_directions,
+        self.initial_dec = AtnFlat(cfg.dec_rnn_size,
                                    cfg.initial_dec_size,
                                    BondAttentionFixed, True)
 
         self.atom_out = TimeDistributed(
-            nn.Linear(cfg.dec_rnn_size*cfg.num_gru_directions, NUM_ATOM_TYPES),
+            nn.Linear(cfg.dec_rnn_size, NUM_ATOM_TYPES),
             axis=2
         )
-        self.valence_out = ValenceDecoder(lambda hid, val: TimeDistributed(nn.Linear(hid, val), 2), cfg.dec_rnn_size*cfg.num_gru_directions)
+        self.valence_out = ValenceDecoder(lambda hid, val: TimeDistributed(nn.Linear(hid, val), 2), cfg.dec_rnn_size)
         
         filter_list = list(reversed(cfg.kp_filter_list))
         mul = get_linear_mul(filter_list)
@@ -87,7 +85,7 @@ class ArNetDecoder(nn.Module):
                                    BondAttentionFixed, True)
         self.kp_reshape = Unflatten((-1, filter_list[0], width, width, width))
         self.kp_dec = IterativeSequential(
-            AtnUpConv, filter_list, False
+            AtnUpConv, filter_list, True
         )
         self.kp_out = TimeDistributed(
             nn.Conv3d(filter_list[-1], 1,
@@ -96,7 +94,7 @@ class ArNetDecoder(nn.Module):
         )
 
     def forward(self, z, tmol, device, use_tmol_bonds=True, truncate_atoms=True):
-
+        
         batch_size = z.size(0)
 
         if tmol is None:
