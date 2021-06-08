@@ -107,15 +107,15 @@ class TensorBonds(Collatable):
         for bi in range(NUM_ACT_BOND_TYPES):
             for ai in range(atom_types.size(0)):
                 if not idxs[ai]: continue
-                bond = self.data[bi+1][ai]
+                bond = self.data[bi+1][ai][:ai]
                 valence = atom_valences[ai][bi]
                 sorted_idxs = torch.argsort(-bond)
                 sorted_idxs = list(filter(lambda x: idxs[x], sorted_idxs))
                 next_atoms = sorted_idxs
                 cur_val = 0
-                for aj in next_atoms:
-                    if out.get_bond_argmax(ai, aj) != BOND_TYPE_HASH['_']:
-                        cur_val += 1
+                #for aj in next_atoms:
+                #    if out.get_bond_argmax(ai, aj) != BOND_TYPE_HASH['_']:
+                #        cur_val += 1
                 targ_val = valence - cur_val
                 for aj in next_atoms:
                     if targ_val <= 0: break
@@ -157,7 +157,7 @@ class TensorMolBasic:
             start_idx = bond.GetBeginAtomIdx()
             end_idx = bond.GetEndAtomIdx()
             bond_index = BOND_TYPE_HASH[bond.GetBondType()]-1
-            self.atom_valences[start_idx][bond_index] += 1
+            #self.atom_valences[start_idx][bond_index] += 1
             self.atom_valences[end_idx][bond_index] += 1
             
 
@@ -360,11 +360,12 @@ def test_bond_recon():
     print(Chem.MolToSmiles(mol))
     tm = TensorMol(mol)
     bdata = torch.randn((NUM_BOND_TYPES, TMCfg.max_atoms, TMCfg.max_atoms))
-    bonds = TensorBonds(data=bdata)
+    bonds = tm.bonds #TensorBonds(data=bdata)
     bonds_a = bonds.argmax(tm.atom_types, tm.atom_valences)
     tm.bonds = bonds_a
     mol2 = tm.get_mol()
     print(Chem.MolToSmiles(mol2))
+    Draw.MolToFile(mol, "test_output/mol_og.png", size=(500, 500), kekulize=False)
     Draw.MolToFile(mol2, "test_output/mol_3d.png", size=(500, 500), kekulize=False)
     Draw.MolToFile(tm.get_mol(False), "test_output/mol_2d.png", size=(500, 500), kekulize=False)
     
