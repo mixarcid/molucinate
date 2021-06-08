@@ -27,9 +27,8 @@ class MolCallback(Callback):
     def cb_batch(self, model, batch_idx, batch, trainer):
         batch = batch.to(model.device)
         mu, logvar = model(batch)
-        #todo: yeet batch
         recon = model.decode(mu, batch)
-        #recon = model.decode(mu)
+        recon2 = model.decode(mu)
         z = self.create_z(model.device)
         gen = model.decode(z)
         for i in range(self.batch_size):
@@ -37,11 +36,12 @@ class MolCallback(Callback):
             gen_mg_img = render_tmol(gen[i])
             mg_img = render_tmol(batch[i], recon[i])
             recon_mg_img = render_tmol(recon[i])
+            recon2_mg_img = render_tmol(recon2[i])
             fname = "{}_epoch_{}_{}".format(self.name,
                                             trainer.current_epoch,
                                             batch_idx*self.batch_size+i)
             self.checkpoint_imgs(trainer, "gen", fname, [[gen_mg_img]])
-            self.checkpoint_imgs(trainer, "recon", fname, [[mg_img, recon_mg_img]])
+            self.checkpoint_imgs(trainer, "recon", fname, [[mg_img, recon_mg_img, recon2_mg_img]])
         metrics = get_gen_metrics(gen)
         for name, metric in metrics.items():
             if trainer.logger: trainer.logger.log_metrics({f'gen_{name}': metric}, step=trainer.global_step)

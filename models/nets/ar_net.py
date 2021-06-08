@@ -8,7 +8,7 @@ from .bond_attention import *
 from .bond_predictor import BondPredictor
 from .attention_utils import *
 from .valence_utils import *
-from .padding import get_padded_kps, get_padded_atypes
+from .padding import get_padded_kps, get_padded_atypes, get_padded_valences
 
 import sys
 sys.path.insert(0, '../..')
@@ -85,7 +85,7 @@ class ArNetDecoder(nn.Module):
         self.kp_flat_dec = AtnFlat(cfg.initial_dec_size,
                                    mul*filter_list[0],
                                    BondAttentionFixed, True)
-        self.kp_reshape = Unflatten((TMCfg.max_atoms, filter_list[0], width, width, width))
+        self.kp_reshape = Unflatten((-1, filter_list[0], width, width, width))
         self.kp_dec = IterativeSequential(
             AtnUpConv, filter_list, False
         )
@@ -95,19 +95,22 @@ class ArNetDecoder(nn.Module):
             axis=2
         )
 
-    def forward(self, z, tmol, device):
+    def forward(self, z, tmol, device, use_tmol_bonds=True, truncate_atoms=True):
+
+        batch_size = z.size(0)
 
         if tmol is None:
-            return TensorMol()
+            return self.generate(z, device)
 
-        atypes = get_padded_atypes(tmol, device)
+        atypes = get_padded_atypes(tmol, device, batch_size, truncate_atoms)
         aenc = self.atom_embed(atypes)
         aenc = self.atom_enc(aenc, tmol.bonds)
 
-        venc = self.valence_embed(tmol.atom_valences, device)
+        valences = get_padded_valences(tmol, device, batch_size, truncate_atoms)
+        venc = self.valence_embed(valences, device)
         venc = self.valence_enc(venc, tmol.bonds)
         
-        kpenc = get_padded_kps(tmol, device)
+        kpenc = get_padded_kps(tmol, device, batch_size, truncate_atoms)
         kpenc = self.kp_init_enc(kpenc)
         kpenc = self.kp_enc(kpenc, tmol.bonds)
         kpenc = kpenc.contiguous().view(kpenc.size(0), kpenc.size(1), -1)
@@ -115,8 +118,8 @@ class ArNetDecoder(nn.Module):
 
         enc = torch.cat((aenc, venc, kpenc), 2)
         enc = self.final_enc(enc, tmol.bonds)
-        
-        lat_in = self.lat_fc(z).unsqueeze(1).repeat(1, TMCfg.max_atoms, 1)
+
+        lat_in = self.lat_fc(z).unsqueeze(1).repeat(1, atypes.size(1), 1)
         rnn_in = torch.cat([lat_in, enc], 2)
         dec, _ = self.rnn(rnn_in)
 
@@ -124,19 +127,28 @@ class ArNetDecoder(nn.Module):
         out_valences = self.valence_out(dec)
         out_atom = self.atom_out(dec)
 
-        if tmol is None:
-            bonds = bond_pred.argmax(torch.argmax(out_atom, -1), torch.argmax(out_valences, -1))
-        else:
+        if use_tmol_bonds:
             bonds = tmol.bonds
+        else:
+            bonds = bond_pred.argmax(torch.argmax(out_atom, -1), torch.argmax(out_valences, -1))
         
         dec = self.initial_dec(dec, bonds)
-        
         kp_out = self.kp_flat_dec(dec, bonds)
         kp_out = self.kp_reshape(kp_out)
         kp_out = self.kp_dec(kp_out, bonds)
-        kp_out = self.kp_out(kp_out).squeeze()
+        kp_out = self.kp_out(kp_out).squeeze(2)
 
         return TensorMol(atom_types=out_atom,
                          atom_valences=out_valences,
                          kps_1h=kp_out,
                          bonds=bond_pred)
+
+    def generate(self, z, device):
+        mol = TensorMol(atom_types=torch.tensor([], device=device, dtype=torch.long),
+                        atom_valences=torch.tensor([], device=device, dtype=torch.long),
+                        kps_1h=torch.tensor([], device=device, dtype=torch.float),
+                        kps=torch.tensor([], device=device, dtype=torch.float),
+                        bonds=TensorBonds(data=torch.tensor([], device=device, dtype=torch.float)))
+        for i in range(TMCfg.max_atoms):
+            mol = self(z, mol.argmax(), device, False, False)
+        return mol

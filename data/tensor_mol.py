@@ -74,10 +74,14 @@ class TensorBonds(Collatable):
             return torch.argmax(self.data[:,start,end], 0)
         elif len(self.data.shape) == 4:
             return torch.argmax(self.data[:,:,start,end], 1)
+        else:
+            raise Exception("incorrect number of dims in TensorBonds data")
 
     def get_all_indexes(self):
         if self.all_indexes is not None:
             return self.all_indexes
+        if len(self.data.shape) == 1:
+            return []
         out = []
         for end in range(TMCfg.max_atoms):
             for start in range(end):
@@ -101,7 +105,7 @@ class TensorBonds(Collatable):
         out = TensorBonds()
         idxs = (atom_types != ATOM_TYPE_HASH["_"]) & (atom_types != ATOM_TYPE_HASH["^"])
         for bi in range(NUM_ACT_BOND_TYPES):
-            for ai in range(TMCfg.max_atoms):
+            for ai in range(atom_types.size(0)):
                 if not idxs[ai]: continue
                 bond = self.data[bi+1][ai]
                 valence = atom_valences[ai][bi]
@@ -239,10 +243,29 @@ class TensorMol(Collatable):
                 atom_valences = torch.argmax(self.atom_valences, -1)
             atom_types = torch.argmax(self.atom_types, -1)
             bonds = self.bonds.argmax(atom_types, atom_valences)
+            if self.kps is None and self.kps_1h is not None:
+                kps = torch.zeros_like(self.kps_1h, device=self.kps_1h.device)
+                if len(kps.shape) == 4:
+                    coords = self.get_coords()
+                    for i, (coord, atom) in enumerate(zip(coords, atom_types)):
+                        if atom in [ ATOM_TYPE_HASH['_'], ATOM_TYPE_HASH['^'] ]: continue
+                        grid = self.gridify_atom(coord, atom)
+                        kps[i] = grid
+                elif len(kps.shape) == 5:
+                    for i in range(kps.size(0)):
+                        coords = self[i].get_coords()
+                        for j, (coord, atom) in enumerate(zip(coords, atom_types[i])):
+                            if atom in [ ATOM_TYPE_HASH['_'], ATOM_TYPE_HASH['^'] ]: continue
+                            grid = self.gridify_atom(coord, atom)
+                            kps[i][j] = grid
+                else:
+                     raise Exception("Incorrect shape for kps_1h")   
+            else:
+                kps = self.kps
             return TensorMol(
                 None,
                 self.molgrid,
-                self.kps,
+                kps,
                 self.kps_1h,
                 atom_types,
                 atom_valences,
