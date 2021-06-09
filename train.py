@@ -9,6 +9,8 @@ import os
 import random
 import numpy as np
 
+assert(torch.__version__ >= '1.7.1')
+
 #torch.multiprocessing.set_sharing_strategy('file_system')
 
 SEED = 49
