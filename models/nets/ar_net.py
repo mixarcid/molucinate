@@ -124,7 +124,7 @@ class ArNetDecoder(nn.Module):
         rnn_in = torch.cat([lat_in, enc], 2)
         dec, _ = self.rnn(rnn_in)
 
-        mask = torch.ones((dec.size(1), dec.size(1)), device=device)
+        mask = torch.ones((dec.size(1), dec.size(1)), device=device, dtype=bool)
         mask = torch.triu(mask, diagonal=1)
         
         dec = self.atn(dec, mask)
