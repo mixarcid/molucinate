@@ -65,6 +65,9 @@ class ArNetDecoder(nn.Module):
                           num_layers=cfg.num_gru_layers,
                           batch_first=True,
                           bidirectional=False)
+
+        self.atn = SelfAttention(cfg.dec_rnn_size, 4)
+        
         self.bond_pred = BondPredictor(cfg.dec_rnn_size,
                                        cfg.bond_pred_filters)
         self.initial_dec = AtnFlat(cfg.dec_rnn_size,
@@ -120,6 +123,11 @@ class ArNetDecoder(nn.Module):
         lat_in = self.lat_fc(z).unsqueeze(1).repeat(1, atypes.size(1), 1)
         rnn_in = torch.cat([lat_in, enc], 2)
         dec, _ = self.rnn(rnn_in)
+
+        mask = torch.ones((dec.size(1), dec.size(1)), device=device)
+        mask = torch.triu(mask, diagonal=1)
+        
+        dec = self.atn(dec, mask)
 
         bond_pred = self.bond_pred(dec)
         out_valences = self.valence_out(dec)

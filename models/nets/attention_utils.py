@@ -60,3 +60,15 @@ class AtnFlat(nn.Module):
     def forward(self, x, *args):
         x = self.atn(x, *args)
         return self.linear(x)
+
+class SelfAttention(nn.Module):
+
+    def __init__(self, filters, heads):
+        super().__init__()
+        self.atn = nn.MultiheadAttention(filters, heads)
+
+    def forward(self, x, mask):
+        x = x.permute(1, 0, 2)
+        out, _ = self.atn(x, x, x, attn_mask=mask)
+        return out.permute(1, 0, 2)
+        
