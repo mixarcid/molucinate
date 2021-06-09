@@ -51,9 +51,12 @@ class ArNetDecoder(nn.Module):
                                    BondAttentionFixed, True)
 
         final_enc_size = cfg.atom_enc_size + cfg.valence_enc_size + cfg.kp_enc_size
-        self.final_enc = AtnFlat(final_enc_size,
-                                 cfg.final_enc_size,
-                                 BondAttentionFixed, True)
+        #self.final_enc = AtnFlat(final_enc_size,
+        #                         cfg.final_enc_size,
+        #                         BondAttentionFixed, True)
+
+        flat_filter_list = [final_enc_size] + [cfg.kp_enc_size]*6
+        self.final_enc = IterativeSequential(AtnFlat, flat_filter_list, BondAttentionFixed, True)
         
         self.lat_fc = nn.Sequential(
             nn.Linear(latent_size, cfg.dec_lat_fc_size, bias=False),
