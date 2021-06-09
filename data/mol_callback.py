@@ -30,11 +30,11 @@ class MolCallback(Callback):
         recon = model.decode(mu, batch)
         recon2 = model.decode(mu)
 
-        print(recon.atom_types[0][0])
-        print(recon2.atom_types[0][0])
+        #print(recon.atom_types[0][0])
+        #print(recon2.atom_types[0][0])
 
-        print(recon[0].argmax().atom_str())
-        print(recon2[0].argmax().atom_str())
+        #print(recon[0].argmax().atom_str())
+        #print(recon2[0].argmax().atom_str())
         
         z = self.create_z(model.device)
         gen = model.decode(z)
