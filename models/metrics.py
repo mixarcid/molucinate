@@ -26,7 +26,7 @@ def bond_iou(recon, x):
             recon[batch].argmax().bonds.data.reshape((NUM_BOND_TYPES, -1)).cpu().numpy().T,
             x[batch].bonds.data.reshape((NUM_BOND_TYPES, -1)).cpu().numpy().T,
             average='macro',
-            zero_division=0
+            zero_division=1
         ))
     return torch.mean(torch.tensor(rets))
 
