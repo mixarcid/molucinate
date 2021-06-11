@@ -25,7 +25,8 @@ def bond_iou(recon, x):
         rets.append(jaccard_score(
             recon[batch].argmax().bonds.data.reshape((NUM_BOND_TYPES, -1)).cpu().numpy().T,
             x[batch].bonds.data.reshape((NUM_BOND_TYPES, -1)).cpu().numpy().T,
-            average='macro'
+            average='macro',
+            zero_division=0
         ))
     return torch.mean(torch.tensor(rets))
 
