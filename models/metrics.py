@@ -2,6 +2,7 @@ import torch
 from copy import deepcopy
 from rdkit import Chem
 from rdkit.Chem import AllChem, rdMolAlign
+from sklearn.metrics import jaccard_score
 
 import sys
 sys.path.insert(0, '../..')
@@ -18,9 +19,29 @@ def rmsd(recon, x):
         rets.append(torch.sqrt(torch.mean(sd)))
     return torch.mean(torch.tensor(rets))
 
+def bond_iou(recon, x):
+    rets = []
+    for batch in range(x.bonds.data.size(0)):
+        rets.append(jaccard_score(
+            recon[batch].argmax().bonds.data.reshape((NUM_BOND_TYPES, -1)).cpu().numpy().T,
+            x[batch].bonds.data.reshape((NUM_BOND_TYPES, -1)).cpu().numpy().T,
+            average='macro'
+        ))
+    return torch.mean(torch.tensor(rets))
+
+def perfect_topo_acc(recon, x):
+    rets = []
+    for batch in range(x.bonds.data.size(0)):
+        rb = recon[batch].argmax()
+        xb = x[batch]
+        rets.append(int((rb.bonds.data == xb.bonds.data).all() and
+                        (rb.atom_types == xb.atom_types).all() and
+                        (rb.atom_valences == xb.atom_valences).all()))
+    torch.mean(torch.tensor(rets))
+
 def get_recon_metrics(recon, x):
     ret = {}
-    for fn in [rmsd]:
+    for fn in [rmsd, bond_iou, perfect_topo_acc]:
         ret[fn.__name__] = fn(recon, x)
     return ret
 

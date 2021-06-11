@@ -54,7 +54,8 @@ model:
     l2_lambda: 1.0
     kp_ce_lambda: 1.0
     atom_ce_lambda: 1.0
-    bond_ce_lambda: 1.0
+    bond_ce_lambda: 0.0
+    bond_focal_lambda: 1.0
     valence_ce_lambda: 1.0
 
 dataset: zinc

@@ -8,3 +8,4 @@ psutil
 pytorch_lightning
 opencv-python
 torchviz
+sklearn

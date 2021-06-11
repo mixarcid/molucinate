@@ -6,6 +6,39 @@ sys.path.insert(0, '../..')
 from data.chem import *
 from data.tensor_mol import TMCfg
 
+def one_hot(labels,
+            num_classes,
+            device = None,
+            dtype = None,
+            eps = 1e-6):
+
+    shape = labels.shape
+    one_hot = torch.zeros((shape[0], num_classes) + shape[1:], device=device, dtype=dtype)
+
+    return one_hot.scatter_(1, labels.unsqueeze(1), 1.0) + eps
+
+def focal_loss(input, target, alpha = 1.0, gamma = 2.0, eps = 1e-8):
+
+    n = input.size(0)
+    out_size = (n,) + input.size()[2:]
+
+    # compute softmax over the classes axis
+    input_soft = F.softmax(input, dim=1) + eps
+
+    # create the labels one hot tensor
+    target_one_hot = one_hot(target, num_classes=input.shape[1], device=input.device, dtype=input.dtype)
+
+    # compute the actual focal loss
+    weight = torch.pow(-input_soft + 1.0, gamma)
+
+    focal = -alpha * weight * torch.log(input_soft)
+    loss_tmp = torch.sum(target_one_hot * focal, dim=1)
+    
+    loss = torch.mean(loss_tmp)
+    
+    return loss
+
+
 def kl_loss(recon, x, mu, logvar):
     return -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
 
@@ -40,7 +73,7 @@ def kp_ce_loss(recon, x, mu, logvar):
         x.contiguous().view(-1)
     )
 
-def bond_ce_loss(recon, x, mu, logvar):
+def bond_loss(recon, x, mu, logvar, fn):
     idxs = (x.atom_types != ATOM_TYPE_HASH["_"]).float()
     recon_bonds = recon.bonds.data
     x_bonds = x.bonds.data
@@ -53,10 +86,16 @@ def bond_ce_loss(recon, x, mu, logvar):
     recon_bonds = recon_bonds[multi_idxs].contiguous().view(-1, NUM_BOND_TYPES)
     x_bonds = x_bonds[multi_idxs].contiguous().view(-1, NUM_BOND_TYPES)
     x_bonds = torch.argmax(x_bonds, -1)
-    return F.cross_entropy(
+    return fn(
         recon_bonds,
         x_bonds
     )
+    
+def bond_ce_loss(recon, x, mu, logvar):
+    return bond_loss(recon, x, mu, logvar, F.cross_entropy)
+
+def bond_focal_loss(recon, x, mu, logvar):
+    return bond_loss(recon, x, mu, logvar, focal_loss)
         
 def combine_losses(loss_fns, cfg, *args):
     ret = 0
@@ -72,6 +111,6 @@ def combine_losses(loss_fns, cfg, *args):
 
 def get_loss_fn(model_name, cfg):
     loss_fns = {
-        'vae': [ atom_ce_loss, valence_ce_loss, kp_ce_loss, kl_loss, bond_ce_loss ]
+        'vae': [ atom_ce_loss, valence_ce_loss, kp_ce_loss, kl_loss, bond_ce_loss, bond_focal_loss ]
     }[model_name]
     return lambda *args: combine_losses(loss_fns, cfg, *args)

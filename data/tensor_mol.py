@@ -43,12 +43,12 @@ class TensorBonds(Collatable):
     data: torch.Tensor
     all_indexes: Optional[List[List[int]]] = None
         
-    def __init__(self, mol=None, data=None):
+    def __init__(self, mol=None, data=None, device='cpu'):
         if data is not None:
             self.data = data
             return
         # bond type, atom 1 idx, atom 2 idx
-        self.data = torch.zeros((NUM_BOND_TYPES, TMCfg.max_atoms, TMCfg.max_atoms))
+        self.data = torch.zeros((NUM_BOND_TYPES, TMCfg.max_atoms, TMCfg.max_atoms), device=device)
         self.data[BOND_TYPE_HASH['_']] = 1
 
     def add_bond_indexes(self, bond_hash, start, end):
@@ -102,7 +102,7 @@ class TensorBonds(Collatable):
             for i in range(self.data.size(0)):
                 out.append(self[i].argmax(atom_types[i], atom_valences[i]))
             return collate(out)
-        out = TensorBonds()
+        out = TensorBonds(device=atom_types.device)
         idxs = (atom_types != ATOM_TYPE_HASH["_"]) & (atom_types != ATOM_TYPE_HASH["^"])
         for bi in range(NUM_ACT_BOND_TYPES):
             for ai in range(atom_types.size(0)):

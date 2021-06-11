@@ -50,12 +50,12 @@ class AtnNetEncoder(nn.Module):
                                    BondAttentionFixed, False)
 
         final_enc_size = cfg.atom_enc_size + cfg.valence_enc_size + cfg.kp_enc_size
-        # self.final_enc = AtnFlat(final_enc_size,
-        #                          cfg.final_enc_size,
-        #                          BondAttentionFixed, False)
+        self.final_enc = AtnFlat(final_enc_size,
+                                 cfg.final_enc_size,
+                                 BondAttentionFixed, False)
 
-        flat_filter_list = [final_enc_size] + [cfg.kp_enc_size]*6
-        self.final_enc = IterativeSequential(AtnFlat, flat_filter_list, BondAttentionFixed, True)
+        #flat_filter_list = [final_enc_size] + [cfg.kp_enc_size]*6
+        #self.final_enc = IterativeSequential(AtnFlat, flat_filter_list, BondAttentionFixed, True)
 
         self.bidirectional = (cfg.num_gru_directions==2)
         self.rnn = nn.GRU(cfg.final_enc_size,
