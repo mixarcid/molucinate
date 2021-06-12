@@ -24,7 +24,7 @@ data:
 
 model:
   name: vae
-  optimizer: adam
+  optimizer: adamw
   learn_rate: 1e-3
   latent_size: 512
   hidden_size: 512
@@ -48,14 +48,20 @@ model:
     dec_rnn_size: 128
     initial_dec_size: 128
     bond_pred_filters: 16
+
+  scheduler:
+    type: cycle
+    min_lr: 1e-6
+    max_lr: 5.0
+    step_size: 1000
     
   loss:
-    kl_lambda: 1.0
+    kl_lambda: 0.1
     l2_lambda: 1.0
     kp_ce_lambda: 1.0
     atom_ce_lambda: 1.0
     bond_ce_lambda: 0.0
-    bond_focal_lambda: 1.0
+    bond_focal_lambda: 5.0
     valence_ce_lambda: 1.0
 
 dataset: zinc

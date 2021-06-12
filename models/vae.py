@@ -11,6 +11,7 @@ class VAE(pl.LightningModule):
         super(VAE, self).__init__()
         self.should_reparam = (cfg.loss.kl_lambda > 0)
         self.optim_name = cfg.optimizer
+        self.scheduler_cfg = cfg.scheduler
         self.learn_rate = cfg.learn_rate
         self.latent_size = cfg.latent_size
         self.hidden_size = cfg.hidden_size
@@ -63,10 +64,22 @@ class VAE(pl.LightningModule):
     def configure_optimizers(self):
         optim_class = {
             'adam': torch.optim.Adam,
+            'adamw': torch.optim.AdamW,
             'sgd': torch.optim.SGD
         }[self.optim_name]
         optimizer = optim_class(self.parameters(), lr=self.learn_rate)
-        return optimizer
+        ret = {
+            "optimizer": optimizer
+        }
+        if self.scheduler_cfg.type == "cycle":
+            ret["lr_scheduler"] = torch.optim.lr_scheduler.CyclicLR(
+                optimizer,
+                self.scheduler_cfg.min_lr,
+                self.scheduler_cfg.max_lr,
+                self.scheduler_cfg.step_size,
+                cycle_momentum=False
+            )
+        return ret
 
     def shared_eval(self, batch, batch_idx, prefix):
         mu, logvar = self(batch)

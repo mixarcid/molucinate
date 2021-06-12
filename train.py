@@ -4,6 +4,7 @@ from omegaconf import OmegaConf
 import torch
 import pytorch_lightning as pl
 from pytorch_lightning.loggers.neptune import NeptuneLogger
+from pytorch_lightning.callbacks import LearningRateMonitor
 from torchviz import make_dot
 import os
 import random
@@ -114,9 +115,15 @@ def train(cfg):
     checkpoint_callback = None
     mol_cb = MolCallback(cfg)
     checkpoint_cb = CheckpointCallback(cfg)
+
+    callbacks = [mol_cb, checkpoint_cb]
+    if logger is not None:
+        lr_monitor = LearningRateMonitor(logging_interval='step')
+        callbacks.append(lr_monitor)
+        
     trainer = pl.Trainer(gpus=int(torch.cuda.is_available()),
                          checkpoint_callback=checkpoint_callback,
-                         callbacks = [mol_cb, checkpoint_cb],
+                         callbacks = callbacks,
                          logger=logger,
                          gradient_clip_val=cfg.grad_clip)
     trainer.fit(model, train_loader, test_loader)
