@@ -72,13 +72,18 @@ class VAE(pl.LightningModule):
             "optimizer": optimizer
         }
         if self.scheduler_cfg.type == "cycle":
-            ret["lr_scheduler"] = torch.optim.lr_scheduler.CyclicLR(
-                optimizer,
-                self.scheduler_cfg.min_lr,
-                self.scheduler_cfg.max_lr,
-                self.scheduler_cfg.step_size,
-                cycle_momentum=False
-            )
+            ret["lr_scheduler"] = {
+                'scheduler': torch.optim.lr_scheduler.CyclicLR(
+                    optimizer,
+                    self.scheduler_cfg.min_lr,
+                    self.scheduler_cfg.max_lr,
+                    self.scheduler_cfg.step_size,
+                    cycle_momentum=False
+                ),
+                'name': 'learning_rate',
+                'interval': 'step',
+                'frequency': 1
+                }
         return ret
 
     def shared_eval(self, batch, batch_idx, prefix):
