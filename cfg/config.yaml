@@ -52,8 +52,8 @@ model:
   scheduler:
     type: cycle
     min_lr: 1e-6
-    max_lr: 0.1
-    step_size: 1000
+    max_lr: 0.05
+    step_size: 2000
     
   loss:
     kl_lambda: 0.1
