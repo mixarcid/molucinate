@@ -52,7 +52,7 @@ model:
   scheduler:
     type: cycle
     min_lr: 1e-6
-    max_lr: 5.0
+    max_lr: 0.1
     step_size: 1000
     
   loss:
