@@ -5,7 +5,7 @@ from .nn_utils import *
 from .mg_decoder import MgDecoder
 from .time_distributed import TimeDistributed
 from .bond_attention import *
-from .bond_predictor import BondPredictor
+from .bond_predictor import MultiHeadedBondPredictor
 from .attention_utils import *
 from .valence_utils import *
 from .padding import get_padded_kps, get_padded_atypes, get_padded_valences
@@ -66,10 +66,11 @@ class ArNetDecoder(nn.Module):
                           batch_first=True,
                           bidirectional=False)
 
-        self.atn = SelfAttention(cfg.dec_rnn_size, 4)
+        #self.atn = SelfAttention(cfg.dec_rnn_size, 4)
         
-        self.bond_pred = BondPredictor(cfg.dec_rnn_size,
-                                       cfg.bond_pred_filters)
+        self.bond_pred = MultiHeadedBondPredictor(cfg.dec_rnn_size,
+                                                  cfg.bond_pred_filters,
+                                                  cfg.bond_pred_heads)
         self.initial_dec = AtnFlat(cfg.dec_rnn_size,
                                    cfg.initial_dec_size,
                                    BondAttentionFixed, True)
@@ -124,10 +125,10 @@ class ArNetDecoder(nn.Module):
         rnn_in = torch.cat([lat_in, enc], 2)
         dec, _ = self.rnn(rnn_in)
 
-        mask = torch.ones((dec.size(1), dec.size(1)), device=device, dtype=bool)
-        mask = torch.triu(mask, diagonal=1)
+        #mask = torch.ones((dec.size(1), dec.size(1)), device=device, dtype=bool)
+        #mask = torch.triu(mask, diagonal=1)
         
-        dec = self.atn(dec, mask)
+        #dec = self.atn(dec, mask)
 
         bond_pred = self.bond_pred(dec)
         out_valences = self.valence_out(dec)

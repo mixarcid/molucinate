@@ -48,11 +48,12 @@ model:
     dec_rnn_size: 128
     initial_dec_size: 128
     bond_pred_filters: 16
+    bond_pred_heads: 16
 
   scheduler:
-    type: cycle
+    type: null
     min_lr: 1e-6
-    max_lr: 0.05
+    max_lr: 0.2
     step_size: 2000
     
   loss:
