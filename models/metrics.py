@@ -35,9 +35,10 @@ def perfect_topo_acc(recon, x):
     for batch in range(x.bonds.data.size(0)):
         rb = recon[batch].argmax()
         xb = x[batch]
+        idxs = xb.atom_types != ATOM_TYPE_HASH["_"]
         rets.append(float((rb.bonds.data == xb.bonds.data).all() and
                           (rb.atom_types == xb.atom_types).all() and
-                          (rb.atom_valences == xb.atom_valences).all()))
+                          (rb.atom_valences[idxs] == xb.atom_valences[idxs]).all()))
     return torch.mean(torch.tensor(rets))
 
 def get_recon_metrics(recon, x):

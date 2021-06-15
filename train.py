@@ -126,6 +126,13 @@ def train(cfg):
                          callbacks = callbacks,
                          logger=logger,
                          gradient_clip_val=cfg.grad_clip)
+
+    cfg_file = f'{cfg.platform.results_path}{cfg.name}.yaml'
+    with open(cfg_file, 'w') as f:
+        f.write(OmegaConf.to_yaml(cfg))
+        if trainer.logger:
+            trainer.logger.experiment.log_artifact(cfg_file, "cfg.yaml")
+    
     trainer.fit(model, train_loader, test_loader)
     
 if __name__ == '__main__':

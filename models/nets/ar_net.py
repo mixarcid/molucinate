@@ -66,7 +66,7 @@ class ArNetDecoder(nn.Module):
                           batch_first=True,
                           bidirectional=False)
 
-        #self.atn = SelfAttention(cfg.dec_rnn_size, 4)
+        self.atn = SelfAttention(cfg.dec_rnn_size, 4)
         
         self.bond_pred = MultiHeadedBondPredictor(cfg.dec_rnn_size,
                                                   cfg.bond_pred_filters,
@@ -125,10 +125,10 @@ class ArNetDecoder(nn.Module):
         rnn_in = torch.cat([lat_in, enc], 2)
         dec, _ = self.rnn(rnn_in)
 
-        #mask = torch.ones((dec.size(1), dec.size(1)), device=device, dtype=bool)
-        #mask = torch.triu(mask, diagonal=1)
+        mask = torch.ones((dec.size(1), dec.size(1)), device=device, dtype=bool)
+        mask = torch.triu(mask, diagonal=1)
         
-        #dec = self.atn(dec, mask)
+        dec = self.atn(dec, mask)
 
         bond_pred = self.bond_pred(dec)
         out_valences = self.valence_out(dec)
