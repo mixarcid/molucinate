@@ -48,7 +48,7 @@ model:
     dec_lat_fc_size: 128
     dec_rnn_size: 128
     initial_dec_size: 128
-    bond_pred_filters: 8
+    bond_pred_filters: 128
     bond_pred_heads: 16
 
   scheduler:
