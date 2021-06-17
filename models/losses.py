@@ -105,6 +105,15 @@ def bv_ce_loss(recon, x, mu, logvar):
         recon.contiguous().view(-1, recon.size(-1)),
         x.contiguous().view(-1),
     )
+
+def bv_focal_loss(recon, x, mu, logvar):
+    idxs = x.atom_types != ATOM_TYPE_HASH["_"]
+    recon = recon.bonds.data[idxs]
+    x = x.bonds.data[idxs]
+    return focal_loss(
+        recon.contiguous().view(-1, recon.size(-1)),
+        x.contiguous().view(-1),
+    )
         
 def combine_losses(loss_fns, cfg, *args):
     ret = 0
@@ -120,6 +129,6 @@ def combine_losses(loss_fns, cfg, *args):
 
 def get_loss_fn(model_name, cfg):
     loss_fns = {
-        'vae': [ atom_ce_loss, kp_ce_loss, kl_loss, bv_ce_loss ]
+        'vae': [ atom_ce_loss, kp_ce_loss, kl_loss, bv_ce_loss, bv_focal_loss ]
     }[model_name]
     return lambda *args: combine_losses(loss_fns, cfg, *args)
