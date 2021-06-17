@@ -37,11 +37,12 @@ class BondAttentionFixed(nn.Module):
 
     def forward(self, x, bonds, is_padded=False):
         out = torch.zeros_like(x)
-        for batch, start, end, bond in bonds.get_all_indexes():
+        for idxs in bonds.get_all_indexes():
+            batch, start, end, bond = idxs
             if is_padded:
                 start += 1
                 end += 1
-            if end >= bonds.data.size(2): continue
+            if end >= bonds.data.size(1): continue
             out[batch, end] += x[batch, start]
             if not self.one_way:
                 out[batch, start] += x[batch, end]

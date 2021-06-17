@@ -5,14 +5,14 @@ from .nn_utils import *
 from .mg_decoder import MgDecoder
 from .time_distributed import TimeDistributed
 from .bond_attention import *
-from .bond_predictor import MultiHeadedBondPredictor
+from .bond_predictor import BondValencePredictor
 from .attention_utils import *
 from .valence_utils import *
 from .padding import get_padded_kps, get_padded_atypes, get_padded_valences
 
 import sys
 sys.path.insert(0, '../..')
-from data.tensor_mol import TensorMol, TensorBonds, TMCfg
+from data.tensor_mol import TensorMol, TensorBondsValence, TMCfg
 from data.chem import *
 
 class ArNetDecoder(nn.Module):
@@ -26,11 +26,11 @@ class ArNetDecoder(nn.Module):
                                 BondAttentionFixed,
                                 True)
 
-        self.valence_embed = ValenceEmbedding(cfg.valence_embed_size)
+        """self.valence_embed = ValenceEmbedding(cfg.valence_embed_size)
         self.valence_enc = AtnFlat(cfg.valence_embed_size,
                                    cfg.valence_enc_size,
                                    BondAttentionFixed,
-                                   True)
+                                   True)"""
 
 
         self.kp_init_enc = TimeDistributed(
@@ -50,7 +50,7 @@ class ArNetDecoder(nn.Module):
                                    cfg.kp_enc_size,
                                    BondAttentionFixed, True)
 
-        final_enc_size = cfg.atom_enc_size + cfg.valence_enc_size + cfg.kp_enc_size
+        final_enc_size = cfg.atom_enc_size + cfg.kp_enc_size # + cfg.valence_enc_size
         self.final_enc = AtnFlat(final_enc_size,
                                  cfg.final_enc_size,
                                  BondAttentionFixed, True)
@@ -68,9 +68,8 @@ class ArNetDecoder(nn.Module):
 
         self.atn = SelfAttention(cfg.dec_rnn_size, 4)
         
-        self.bond_pred = MultiHeadedBondPredictor(cfg.dec_rnn_size,
-                                                  cfg.bond_pred_filters,
-                                                  cfg.bond_pred_heads)
+        self.bond_pred = BondValencePredictor(cfg.dec_rnn_size,
+                                              cfg.bond_pred_filters)
         self.initial_dec = AtnFlat(cfg.dec_rnn_size,
                                    cfg.initial_dec_size,
                                    BondAttentionFixed, True)
@@ -79,7 +78,7 @@ class ArNetDecoder(nn.Module):
             nn.Linear(cfg.dec_rnn_size, NUM_ATOM_TYPES),
             axis=2
         )
-        self.valence_out = ValenceDecoder(lambda hid, val: TimeDistributed(nn.Linear(hid, val), 2), cfg.dec_rnn_size)
+        #self.valence_out = ValenceDecoder(lambda hid, val: TimeDistributed(nn.Linear(hid, val), 2), cfg.dec_rnn_size)
         
         filter_list = list(reversed(cfg.kp_filter_list))
         mul = get_linear_mul(filter_list)
@@ -108,9 +107,9 @@ class ArNetDecoder(nn.Module):
         aenc = self.atom_embed(atypes)
         aenc = self.atom_enc(aenc, tmol.bonds, True)
 
-        valences = get_padded_valences(tmol, device, batch_size, truncate_atoms)
-        venc = self.valence_embed(valences, device)
-        venc = self.valence_enc(venc, tmol.bonds, True)
+        #valences = get_padded_valences(tmol, device, batch_size, truncate_atoms)
+        #venc = self.valence_embed(valences, device)
+        #venc = self.valence_enc(venc, tmol.bonds, True)
         
         kpenc = get_padded_kps(tmol, device, batch_size, truncate_atoms)
         kpenc = self.kp_init_enc(kpenc)
@@ -118,7 +117,7 @@ class ArNetDecoder(nn.Module):
         kpenc = kpenc.contiguous().view(kpenc.size(0), kpenc.size(1), -1)
         kpenc = self.kp_flat_enc(kpenc, tmol.bonds, True)
 
-        enc = torch.cat((aenc, venc, kpenc), 2)
+        enc = torch.cat((aenc, kpenc), 2)
         enc = self.final_enc(enc, tmol.bonds, True)
 
         lat_in = self.lat_fc(z).unsqueeze(1).repeat(1, atypes.size(1), 1)
@@ -131,13 +130,13 @@ class ArNetDecoder(nn.Module):
         dec = self.atn(dec, mask)
 
         bond_pred = self.bond_pred(dec)
-        out_valences = self.valence_out(dec)
+        #out_valences = self.valence_out(dec)
         out_atom = self.atom_out(dec)
 
         if use_tmol_bonds:
             bonds = tmol.bonds
         else:
-            bonds = bond_pred.argmax(torch.argmax(out_atom, -1), torch.argmax(out_valences, -1))
+            bonds = bond_pred.argmax(torch.argmax(out_atom, -1))#, torch.argmax(out_valences, -1))
         
         dec = self.initial_dec(dec, bonds)
         kp_out = self.kp_flat_dec(dec, bonds)
@@ -146,16 +145,16 @@ class ArNetDecoder(nn.Module):
         kp_out = self.kp_out(kp_out).squeeze(2)
 
         return TensorMol(atom_types=out_atom,
-                         atom_valences=out_valences,
+                         #atom_valences=out_valences,
                          kps_1h=kp_out,
                          bonds=bond_pred)
 
     def generate(self, z, device):
         mol = TensorMol(atom_types=torch.tensor([], device=device, dtype=torch.long),
-                        atom_valences=torch.tensor([], device=device, dtype=torch.long),
+                        #atom_valences=torch.tensor([], device=device, dtype=torch.long),
                         kps_1h=torch.tensor([], device=device, dtype=torch.float),
                         kps=torch.tensor([], device=device, dtype=torch.float),
-                        bonds=TensorBonds(data=torch.tensor([], device=device, dtype=torch.float)))
+                        bonds=TensorBondsValence(data=torch.tensor([], device=device, dtype=torch.long)))
         for i in range(TMCfg.max_atoms):
             mol = self(z, mol.argmax(), device, False, False)
         return mol

@@ -5,6 +5,7 @@ from rdkit import Chem
 from rdkit.Geometry import Point3D
 import math
 import numpy as np
+from copy import deepcopy
 
 try:
     from .chem import *
@@ -127,14 +128,86 @@ class TensorBonds(Collatable):
                         targ_val -= 1
         return out
 
+class TensorBondsValence(Collatable):
+    data: torch.Tensor
+    all_indexes: Optional[List[List[int]]] = None
+        
+    def __init__(self, mol=None, data=None, device='cpu'):
+        if data is not None:
+            self.data = data
+            return
+        self.data = self.get_default_data(device)
+
+        atom_valences = torch.zeros((TMCfg.max_atoms, NUM_ACT_BOND_TYPES), dtype=torch.long)
+
+        for bond in mol.GetBonds():
+            start_idx = bond.GetBeginAtomIdx()
+            end_idx = bond.GetEndAtomIdx()
+            bond_index = BOND_TYPE_HASH[bond.GetBondType()]-1
+            cur_valence = atom_valences[end_idx][bond_index]
+            self.data[end_idx][bond_index][cur_valence] = start_idx
+            atom_valences[end_idx][bond_index] += 1
+
+    def get_default_data(self, device='cpu', batches=None, atoms=None):
+        if atoms is None:
+            atoms = TMCfg.max_atoms
+        if batches is None:
+            shape = (atoms, NUM_ACT_BOND_TYPES, TMCfg.max_valence)
+        else:
+            shape = (batches, atoms, NUM_ACT_BOND_TYPES, TMCfg.max_valence)
+        data = torch.zeros(shape, device=device, dtype=torch.long)
+        for i in range(atoms):
+            if batches is None:
+                data[i,:,:] = i
+            else:
+                data[:,i,:,:] = i
+        return data
+
+    def argmax(self, atom_types):
+        assert self.data.dtype == torch.float
+        data = torch.argmax(self.data, -1)
+        idxs = (atom_types != ATOM_TYPE_HASH["_"]) & (atom_types != ATOM_TYPE_HASH["^"])
+        if len(data.shape) == 3:
+            batches = None
+            atoms = None
+        else:
+            batches = self.data.shape[0]
+            atoms = self.data.shape[1]
+        ret_data = self.get_default_data(self.data.device, batches, atoms)
+        ret_data[idxs] = data[idxs]
+        return TensorBondsValence(data=ret_data)
+
+    def get_all_indexes(self):
+        assert self.data.dtype == torch.long
+        if self.data.shape[0] == 0: return []
+        if len(self.data.shape) == 3:
+            batches = None
+            atoms = None
+        else:
+            batches = self.data.shape[0]
+            atoms = self.data.shape[1]
+        mask = self.data != self.get_default_data(self.data.device, batches, atoms)
+        indexes = mask.nonzero(as_tuple=False)
+        #print(self.data)
+        #print(indexes)
+        # shape is [batch, start, end, bond]
+        end = deepcopy(indexes[...,-3])
+        indexes[...,-1] = indexes[...,-2] + 1
+        indexes[...,-2] = end
+        indexes[...,-3] = self.data[mask]
+        if len(indexes) == 0:
+            return []
+        indexes = set(indexes)
+        return indexes
+
 # just stores atom coords, atom types, and bonds
 # not used by any model directly, but useful intermediate
 # also format used by renderer
 class TensorMolBasic:
     atom_types: torch.Tensor
-    atom_valences: torch.Tensor
+    #atom_valences: torch.Tensor
     coords: torch.Tensor
-    bonds: TensorBonds
+    bonds: TensorBondsValence
         
     def __init__(self, mol):
         # batch, atom_idx, dimension
@@ -142,7 +215,7 @@ class TensorMolBasic:
         # batch, atom_idx, atom_type
         self.atom_types = torch.zeros(TMCfg.max_atoms, dtype=torch.long)
         # batch, atom_idx, atom_valence
-        self.atom_valences = torch.zeros((TMCfg.max_atoms, NUM_ACT_BOND_TYPES), dtype=torch.long)
+        #self.atom_valences = torch.zeros((TMCfg.max_atoms, NUM_ACT_BOND_TYPES), dtype=torch.long)
 
         for i, atom in enumerate(mol.GetAtoms()):
             atom_type = ATOM_TYPE_HASH[atom.GetSymbol()]
@@ -151,14 +224,14 @@ class TensorMolBasic:
             self.coords[i] = torch.tensor([ pos.x, pos.y, pos.z ])
         self.center_coords()
 
-        self.bonds = TensorBonds(mol)
-        for bond in mol.GetBonds():
+        self.bonds = TensorBondsValence(mol)
+        """for bond in mol.GetBonds():
             self.bonds.add_bond(bond)
             start_idx = bond.GetBeginAtomIdx()
             end_idx = bond.GetEndAtomIdx()
             bond_index = BOND_TYPE_HASH[bond.GetBondType()]-1
             #self.atom_valences[start_idx][bond_index] += 1
-            self.atom_valences[end_idx][bond_index] += 1
+            self.atom_valences[end_idx][bond_index] += 1"""
             
 
     def center_coords(self):
@@ -179,8 +252,8 @@ class TensorMol(Collatable):
     kps: torch.Tensor
     kps_1h: torch.Tensor
     atom_types: torch.Tensor
-    atom_valences: torch.Tensor
-    bonds: torch.Tensor
+    #atom_valences: torch.Tensor
+    bonds: TensorBondsValence
 
     def __init__(self,
                  mol=None,
@@ -188,19 +261,19 @@ class TensorMol(Collatable):
                  kps=None,
                  kps_1h=None,
                  atom_types=None,
-                 atom_valences=None,
+                 #atom_valences=None,
                  bonds=None):
         if mol is None:
             self.molgrid = molgrid
             self.kps = kps
             self.kps_1h = kps_1h
             self.atom_types = atom_types
-            self.atom_valences = atom_valences
+            #self.atom_valences = atom_valences
             self.bonds = bonds
             return
         tmb = TensorMolBasic(mol)
         self.atom_types = tmb.atom_types
-        self.atom_valences = tmb.atom_valences
+        #self.atom_valences = tmb.atom_valences
         self.bonds = tmb.bonds
 
         sz = TMCfg.grid_size
@@ -237,12 +310,12 @@ class TensorMol(Collatable):
 
     def argmax(self):
         if self.atom_types.dtype != torch.long:
-            if self.atom_valences is None:
-                atom_valences = None
-            else:
-                atom_valences = torch.argmax(self.atom_valences, -1)
+            #if self.atom_valences is None:
+            #    atom_valences = None
+            #else:
+            #    atom_valences = torch.argmax(self.atom_valences, -1)
             atom_types = torch.argmax(self.atom_types, -1)
-            bonds = self.bonds.argmax(atom_types, atom_valences)
+            bonds = self.bonds.argmax(atom_types)
             if self.kps is None and self.kps_1h is not None:
                 kps = torch.zeros_like(self.kps_1h, device=self.kps_1h.device)
                 if len(kps.shape) == 4:
@@ -268,7 +341,7 @@ class TensorMol(Collatable):
                 kps,
                 self.kps_1h,
                 atom_types,
-                atom_valences,
+                #atom_valences,
                 bonds
             )
         else:
@@ -300,7 +373,10 @@ class TensorMol(Collatable):
             else:
                 mol_idxs.append(None)
         for start, end, bond in self.bonds.get_all_indexes():
-            mol.AddBond(mol_idxs[start], mol_idxs[end], BOND_TYPE_LIST[bond])
+            try:
+                mol.AddBond(mol_idxs[start], mol_idxs[end], BOND_TYPE_LIST[bond])
+            except RuntimeError:
+                pass
         coords = self.get_coords()
         conformer = Chem.Conformer(mol.GetNumAtoms())
         if add_conformer:
@@ -340,9 +416,12 @@ def test_collate():
 def test_bond_argmax():
     mol = get_test_mol()
     tm = TensorMol(mol)
-    bdata = torch.randn((NUM_BOND_TYPES, TMCfg.max_atoms, TMCfg.max_atoms))
-    bonds = TensorBonds(data=bdata)
-    bonds_a = bonds.argmax(tm.atom_types, tm.atom_valences)
+    bdata = torch.randn((TMCfg.max_atoms, NUM_ACT_BOND_TYPES, TMCfg.max_valence, TMCfg.max_atoms))
+    for i in range(TMCfg.max_atoms):
+        bdata[i,:,:,i:] = 0
+    bonds = TensorBondsValence(data=bdata)
+    bonds_a = bonds.argmax(tm.atom_types)
+    print(bonds_a.get_all_indexes())
 
 def test_mol_export():
     from rdkit.Chem import Draw
@@ -359,16 +438,24 @@ def test_bond_recon():
     mol = get_test_mol()
     print(Chem.MolToSmiles(mol))
     tm = TensorMol(mol)
-    bdata = torch.randn((NUM_BOND_TYPES, TMCfg.max_atoms, TMCfg.max_atoms))
-    bonds = tm.bonds #TensorBonds(data=bdata)
-    bonds_a = bonds.argmax(tm.atom_types, tm.atom_valences)
-    tm.bonds = bonds_a
     mol2 = tm.get_mol()
+    print(tm.bonds.data)
     print(Chem.MolToSmiles(mol2))
     Draw.MolToFile(mol, "test_output/mol_og.png", size=(500, 500), kekulize=False)
     Draw.MolToFile(mol2, "test_output/mol_3d.png", size=(500, 500), kekulize=False)
     Draw.MolToFile(tm.get_mol(False), "test_output/mol_2d.png", size=(500, 500), kekulize=False)
+
+def test_collated_bond_indexes():
+    from rdkit.Chem import Draw
+    mol = get_test_mol()
+    print(Chem.MolToSmiles(mol))
+    tm = TensorMol(mol)
+    tm_collated = collate([tm, tm])
+    print(tm.bonds.get_all_indexes())
+    print(tm_collated.bonds.get_all_indexes())
     
 if __name__ == "__main__":
     #test_mol_export()
-    test_bond_recon()
+    #test_bond_recon()
+    #test_collated_bond_indexes()
+    test_bond_argmax()

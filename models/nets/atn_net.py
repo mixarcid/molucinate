@@ -11,7 +11,7 @@ from .valence_utils import *
 
 import sys
 sys.path.insert(0, '../..')
-from data.tensor_mol import TensorMol, TensorBonds, TMCfg
+from data.tensor_mol import TensorMol, TMCfg
 from data.chem import *
 
 class AtnNetEncoder(nn.Module):
@@ -25,11 +25,11 @@ class AtnNetEncoder(nn.Module):
                                 BondAttentionFixed,
                                 False)
 
-        self.valence_embed = ValenceEmbedding(cfg.valence_embed_size)
-        self.valence_enc = AtnFlat(cfg.valence_embed_size,
-                                   cfg.valence_enc_size,
-                                   BondAttentionFixed,
-                                   False)
+        #self.valence_embed = ValenceEmbedding(cfg.valence_embed_size)
+        #self.valence_enc = AtnFlat(cfg.valence_embed_size,
+        #                           cfg.valence_enc_size,
+        #                           BondAttentionFixed,
+        #                           False)
 
 
         self.kp_init_enc = TimeDistributed(
@@ -49,7 +49,7 @@ class AtnNetEncoder(nn.Module):
                                    cfg.kp_enc_size,
                                    BondAttentionFixed, False)
 
-        final_enc_size = cfg.atom_enc_size + cfg.valence_enc_size + cfg.kp_enc_size
+        final_enc_size = cfg.atom_enc_size + cfg.kp_enc_size #cfg.valence_enc_size
         self.final_enc = AtnFlat(final_enc_size,
                                  cfg.final_enc_size,
                                  BondAttentionFixed, False)
@@ -70,8 +70,8 @@ class AtnNetEncoder(nn.Module):
         aenc = self.atom_embed(tmol.atom_types)
         aenc = self.atom_enc(aenc, tmol.bonds)
 
-        venc = self.valence_embed(tmol.atom_valences, device)
-        venc = self.valence_enc(venc, tmol.bonds)
+        #venc = self.valence_embed(tmol.atom_valences, device)
+        #venc = self.valence_enc(venc, tmol.bonds)
         
         kpenc = torch.unsqueeze(tmol.kps, 2)
         kpenc = self.kp_init_enc(kpenc)
@@ -79,7 +79,7 @@ class AtnNetEncoder(nn.Module):
         kpenc = kpenc.contiguous().view(kpenc.size(0), kpenc.size(1), -1)
         kpenc = self.kp_flat_enc(kpenc, tmol.bonds)
 
-        enc = torch.cat((aenc, venc, kpenc), 2)
+        enc = torch.cat((aenc, kpenc), 2)
         enc = self.final_enc(enc, tmol.bonds)
         _, hidden = self.rnn(enc)
         if self.bidirectional:
@@ -117,7 +117,7 @@ class AtnNetDecoder(nn.Module):
             nn.Linear(cfg.dec_rnn_size*cfg.num_gru_directions, NUM_ATOM_TYPES),
             axis=2
         )
-        self.valence_out = ValenceDecoder(lambda hid, val: TimeDistributed(nn.Linear(hid, val), 2), cfg.dec_rnn_size*cfg.num_gru_directions)
+        #self.valence_out = ValenceDecoder(lambda hid, val: TimeDistributed(nn.Linear(hid, val), 2), cfg.dec_rnn_size*cfg.num_gru_directions)
         
         filter_list = list(reversed(cfg.kp_filter_list))
         mul = get_linear_mul(filter_list)
@@ -144,7 +144,7 @@ class AtnNetDecoder(nn.Module):
         dec, _ = self.rnn(rnn_in)
 
         bond_pred = self.bond_pred(dec)
-        out_valences = self.valence_out(dec)
+        #out_valences = self.valence_out(dec)
         out_atom = self.atom_out(dec)
 
         if tmol is None:
@@ -160,7 +160,7 @@ class AtnNetDecoder(nn.Module):
         kp_out = self.kp_out(kp_out).squeeze()
 
         return TensorMol(atom_types=out_atom,
-                         atom_valences=out_valences,
+                         #atom_valences=out_valences,
                          kps_1h=kp_out,
                          bonds=bond_pred)
                           

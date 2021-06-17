@@ -41,6 +41,7 @@ def rand_rotation_matrix(deflection=1.0, randnums=None):
     R = np.array(((ct, st, 0), (-st, ct, 0), (0, 0, 1)))
     
     # Construct the rotation matrix  ( V Transpose(V) - I ) R.
-    
-    M = (np.outer(V, V) - np.eye(3)).dot(R)
+
+    M = np.eye(4)
+    M[:-1,:-1] = (np.outer(V, V) - np.eye(3)).dot(R)
     return M

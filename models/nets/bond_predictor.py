@@ -6,7 +6,7 @@ from .nn_utils import *
 
 import sys
 sys.path.insert(0, '../..')
-from data.tensor_mol import TensorBonds, TMCfg
+from data.tensor_mol import TensorBonds, TensorBondsValence, TMCfg
 from data.chem import *
 
 class BondPredictor(nn.Module):
@@ -57,3 +57,40 @@ class MultiHeadedBondPredictor(nn.Module):
         dec = self.decoder(mat.reshape(-1, self.num_heads))
         bdata = dec.reshape((batch, atoms, atoms, NUM_BOND_TYPES)).permute(0, 3, 1, 2)
         return TensorBonds(data=bdata)
+
+class BondValencePredictor(nn.Module):
+
+    def __init__(self, in_filters, hid_filters):
+        super().__init__()
+        self.in_filters = in_filters
+        self.hid_filters = hid_filters
+        self.key_enc = TimeDistributed(
+            nn.Sequential(
+                nn.Linear(in_filters, hid_filters),
+                nn.LeakyReLU(LEAK_VALUE)
+            ),
+            axis=2
+        )
+        self.query_enc = TimeDistributed(
+            nn.Sequential(
+                nn.Linear(in_filters, hid_filters*NUM_ACT_BOND_TYPES*TMCfg.max_valence),
+                nn.LeakyReLU(LEAK_VALUE)
+            ),
+            axis=2
+        )
+
+    def forward(self, x):
+        batch = x.size(0)
+        atoms = x.size(1)
+        qshape = (batch, atoms, self.hid_filters, NUM_ACT_BOND_TYPES, TMCfg.max_valence)
+        keys = self.key_enc(x)
+        queries = self.query_enc(x).reshape(qshape)
+        bdata = torch.einsum('abc,afcde->afdeb', keys, queries)
+        mask = torch.ones((atoms, atoms), dtype=bool, device=x.device)
+        mask = torch.triu(mask, 1).reshape((1, atoms, 1, 1, atoms))
+        mask = mask.repeat(batch, 1, NUM_ACT_BOND_TYPES, TMCfg.max_valence, 1)
+        #ret = torch.zeros_like(bdata)
+        #ret[mask] += bdata[mask]
+        bdata[mask] = float('-inf')
+        return TensorBondsValence(data=bdata)
+        

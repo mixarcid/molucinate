@@ -9,6 +9,7 @@ debug:
   checkpoint_n_batches: 128
   stop_at: null
   save_img: false
+  mol_cb_enable: true
 
 # data:
 #   grid_dim: 16
@@ -47,7 +48,7 @@ model:
     dec_lat_fc_size: 128
     dec_rnn_size: 128
     initial_dec_size: 128
-    bond_pred_filters: 16
+    bond_pred_filters: 8
     bond_pred_heads: 16
 
   scheduler:
@@ -61,8 +62,9 @@ model:
     l2_lambda: 1.0
     kp_ce_lambda: 1.0
     atom_ce_lambda: 1.0
+    bv_ce_lambda: 2.0
     bond_ce_lambda: 0.0
-    bond_focal_lambda: 5.0
+    bond_focal_lambda: 0.0
     valence_ce_lambda: 1.0
 
 dataset: zinc

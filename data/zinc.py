@@ -12,6 +12,9 @@ except ImportError:
     from tensor_mol import TensorMol, TMCfg
     from utils import rand_rotation_matrix
 
+    
+# pre_mol = Chem.MolFromMol2File('/home/boris/Data/Zinc/zinc483323.mol2')
+
 TT_SPLIT = 0.9
 class ZincDataset(data.Dataset):
 
@@ -38,7 +41,8 @@ class ZincDataset(data.Dataset):
 
         try:
             mol = Chem.MolFromMol2File(fname)
-            rdMolTransforms.TransformConformer(mol.GetConformer(0), rand_rotation_matrix())
+            mat = rand_rotation_matrix()
+            rdMolTransforms.TransformConformer(mol.GetConformer(0), mat)
             tm = TensorMol(mol)
         except:
             #raise
@@ -55,7 +59,7 @@ def main(cfg):
     print(len(dataset))
     for i, tmol in enumerate(dataset):
         #print(tmol.atom_str())
-        render_molgrid_rt(tmol)
+        render_kp_rt(tmol)
     
 if __name__ == "__main__":
     from render import *

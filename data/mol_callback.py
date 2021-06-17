@@ -15,6 +15,7 @@ class MolCallback(Callback):
         self.latent_size = gcfg.model.latent_size
         self.results_path = gcfg.platform.results_path
         self.n = 0
+        self.enabled = gcfg.debug.mol_cb_enable
 
     def checkpoint_imgs(self, trainer, log_name, fname, img_list):
         img_path = self.results_path + fname + "_" + log_name + ".png"
@@ -54,6 +55,7 @@ class MolCallback(Callback):
             if trainer.logger: trainer.logger.log_metrics({f'gen_{name}': metric}, step=trainer.global_step)
 
     def cb(self, trainer, pl_module):
+        if not self.enabled: return
         trainer.model.eval()
         val_data = trainer.val_dataloaders[0]
         try:

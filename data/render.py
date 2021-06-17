@@ -270,6 +270,6 @@ if __name__ == "__main__":
         'max_valence': 6
     })
     TMCfg.set_cfg(cfg)
-    test_uff()
+    #test_uff()
     #test_render_tmol()
-    #test_kp()
+    test_kp()
