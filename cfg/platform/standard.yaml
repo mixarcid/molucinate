@@ -6,4 +6,7 @@ zinc_dir: "/home/boris/Data/Zinc/"
 zinc_file_list: "/home/boris/Data/Zinc/files.txt"
 zinc_filtered_list: "/home/boris/Data/Zinc/files_filtered_mol.txt"
 
+pdbbind_dir: "/home/boris/Data/pdbbind/"
+pdbbind_index: "/home/boris/Data/pdbbind/plain-text-index/index/INDEX_refined_data.2019"
+
 results_path: "/home/boris/Data/mol-results/"
