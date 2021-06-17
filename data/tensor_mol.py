@@ -373,6 +373,8 @@ class TensorMol(Collatable):
             else:
                 mol_idxs.append(None)
         for start, end, bond in self.bonds.get_all_indexes():
+            if mol_idxs[start] is None or mol_idxs[end] is None:
+                continue
             try:
                 mol.AddBond(mol_idxs[start], mol_idxs[end], BOND_TYPE_LIST[bond])
             except RuntimeError:

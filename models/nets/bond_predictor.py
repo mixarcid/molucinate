@@ -86,6 +86,8 @@ class BondValencePredictor(nn.Module):
         keys = self.key_enc(x)
         queries = self.query_enc(x).reshape(qshape)
         bdata = torch.einsum('abc,afcde->afdeb', keys, queries)
+        #print(bdata.shape)
+        #print(torch.einsum('abc,afcde->abdef', keys, queries).shape)
         mask = torch.ones((atoms, atoms), dtype=bool, device=x.device)
         mask = torch.triu(mask, 1).reshape((1, atoms, 1, 1, atoms))
         mask = mask.repeat(batch, 1, NUM_ACT_BOND_TYPES, TMCfg.max_valence, 1)
