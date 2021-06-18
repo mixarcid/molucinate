@@ -8,6 +8,7 @@ from .bond_attention import *
 from .bond_predictor import BondPredictor
 from .attention_utils import *
 from .valence_utils import *
+from .bond_encoder import BondEncoder
 
 import sys
 sys.path.insert(0, '../..')
@@ -54,6 +55,14 @@ class AtnNetEncoder(nn.Module):
                                  cfg.final_enc_size,
                                  BondAttentionFixed, False)
 
+        self.bond_enc = BondEncoder(cfg.final_enc_size,
+                                    cfg.bond_enc_filters,
+                                    cfg.bond_pred_filters)
+
+        self.final_final_enc = AtnFlat(cfg.final_enc_size + cfg.bond_pred_filters,
+                                       cfg.final_enc_size,
+                                       BondAttentionFixed, False)
+
         #flat_filter_list = [final_enc_size] + [cfg.kp_enc_size]*6
         #self.final_enc = IterativeSequential(AtnFlat, flat_filter_list, BondAttentionFixed, True)
 
@@ -81,6 +90,11 @@ class AtnNetEncoder(nn.Module):
 
         enc = torch.cat((aenc, kpenc), 2)
         enc = self.final_enc(enc, tmol.bonds)
+
+        bond_enc = self.bond_enc(enc, tmol.bonds)
+        enc = torch.cat((enc, bond_enc), 2)
+        enc = self.final_final_enc(enc, tmol.bonds)
+        
         _, hidden = self.rnn(enc)
         if self.bidirectional:
             hidden = torch.cat((hidden[-1], hidden[-2]), 1)

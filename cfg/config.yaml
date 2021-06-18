@@ -50,6 +50,7 @@ model:
     initial_dec_size: 128
     bond_pred_filters: 128
     bond_pred_heads: 16
+    bond_enc_filters: 64
 
   scheduler:
     type: null
@@ -73,7 +74,7 @@ batch_size: 64
 grad_clip: 0
 
 test:
-  run_id: MOL-148
+  run_id: MOL-154
   use_cache: false
 
 defaults:

@@ -27,6 +27,7 @@ for atom, r in ATOM_RADII_HASH.items():
     ATOM_RADII_LIST[ATOM_TYPE_HASH[atom]] = r
 
 ATOM_COLORS = {
+    '^': np.array([127, 127, 127]),
     '_': np.array([127, 127, 127]),
     'C': np.array([0,0,0]),
     'H': np.array([255,255,255]),
