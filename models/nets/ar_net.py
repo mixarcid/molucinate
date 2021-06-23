@@ -5,14 +5,14 @@ from .nn_utils import *
 from .mg_decoder import MgDecoder
 from .time_distributed import TimeDistributed
 from .bond_attention import *
-from .bond_predictor import BondValencePredictor
+from .bond_predictor import BondPredictor
 from .attention_utils import *
 from .valence_utils import *
 from .padding import get_padded_kps, get_padded_atypes, get_padded_valences
 
 import sys
 sys.path.insert(0, '../..')
-from data.tensor_mol import TensorMol, TensorBondsValence, TMCfg
+from data.tensor_mol import TensorMol, TensorBonds, TMCfg
 from data.chem import *
 
 class ArNetDecoder(nn.Module):
@@ -68,8 +68,8 @@ class ArNetDecoder(nn.Module):
 
         self.atn = SelfAttention(cfg.dec_rnn_size, 4)
         
-        self.bond_pred = BondValencePredictor(cfg.dec_rnn_size,
-                                              cfg.bond_pred_filters)
+        self.bond_pred = BondPredictor(cfg.dec_rnn_size,
+                                       cfg.bond_pred_filters)
         self.initial_dec = AtnFlat(cfg.dec_rnn_size,
                                    cfg.initial_dec_size,
                                    BondAttentionFixed, True)
@@ -97,7 +97,6 @@ class ArNetDecoder(nn.Module):
         )
 
     def forward(self, z, tmol, device, use_tmol_bonds=True, truncate_atoms=True):
-        
         batch_size = z.size(0)
 
         if tmol is None:
@@ -110,7 +109,7 @@ class ArNetDecoder(nn.Module):
         #valences = get_padded_valences(tmol, device, batch_size, truncate_atoms)
         #venc = self.valence_embed(valences, device)
         #venc = self.valence_enc(venc, tmol.bonds, True)
-        
+    
         kpenc = get_padded_kps(tmol, device, batch_size, truncate_atoms)
         kpenc = self.kp_init_enc(kpenc)
         kpenc = self.kp_enc(kpenc, tmol.bonds, True)
@@ -154,7 +153,8 @@ class ArNetDecoder(nn.Module):
                         #atom_valences=torch.tensor([], device=device, dtype=torch.long),
                         kps_1h=torch.tensor([], device=device, dtype=torch.float),
                         kps=torch.tensor([], device=device, dtype=torch.float),
-                        bonds=TensorBondsValence(data=torch.tensor([], device=device, dtype=torch.long)))
+                        bonds=TensorBonds(bond_types=torch.tensor([], device=device, dtype=torch.long),
+                                          bonded_atoms=torch.tensor([], device=device, dtype=torch.long)))
         for i in range(TMCfg.max_atoms):
             mol = self(z, mol.argmax(), device, False, False)
         return mol

@@ -19,7 +19,7 @@ class BondEncoder(nn.Module):
                           batch_first=True)
         self.fc = TimeDistributed(
             nn.Sequential(
-                nn.Linear(out_rnn_filters*NUM_ACT_BOND_TYPES*TMCfg.max_valence, out_filters),
+                nn.Linear(out_rnn_filters*TMCfg.max_valence, out_filters),
                 nn.LeakyReLU(LEAK_VALUE)
             ),
             axis=2
@@ -27,17 +27,14 @@ class BondEncoder(nn.Module):
 
     def forward(self, x, bonds):
         rnn_out, _ = self.rnn(x)
-        bflat = bonds.data.reshape(
-            (bonds.data.size(0),
-             bonds.data.size(1),
-             -1))
-        fc_in = torch.zeros((bflat.size(0), bflat.size(1), bflat.size(-1), rnn_out.size(-1)), device=bflat.device)
-        for batch in range(bflat.size(0)):
-            fc_in[batch] = rnn_out[batch][bflat[batch]]
-        #for batch in range(bflat.size(0)):
-        #    for atom in range(bflat.size(1)):
-        #        for bv in range(bflat.size(2)):
-        #            fc_in[batch][atom][bv] = rnn_out[batch][bflat[batch][atom][bv]]
+        ba = bonds.bonded_atoms
+        fc_in = torch.zeros((ba.size(0), ba.size(1), ba.size(-1), rnn_out.size(-1)), device=ba.device)
+        for batch in range(ba.size(0)):
+            fc_in[batch] = rnn_out[batch][ba[batch]]
+        for batch in range(ba.size(0)):
+            for atom in range(ba.size(1)):
+                for bv in range(ba.size(2)):
+                    fc_in[batch][atom][bv] = rnn_out[batch][ba[batch][atom][bv]]
 
         fc_in = fc_in.reshape((fc_in.size(0), fc_in.size(1), -1))
         

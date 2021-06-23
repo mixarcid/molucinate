@@ -21,7 +21,8 @@ data:
   grid_dim: 8
   grid_step: 0.5
   max_atoms: 16
-  max_valence: 6
+  max_valence: 4
+  kekulize: true
 
 model:
   name: vae
@@ -51,6 +52,7 @@ model:
     bond_pred_filters: 128
     bond_pred_heads: 16
     bond_enc_filters: 64
+    bond_embed_size: 8
 
   scheduler:
     type: null
@@ -68,6 +70,8 @@ model:
     bond_ce_lambda: 0.0
     bond_focal_lambda: 0.0
     valence_ce_lambda: 1.0
+    bond_type_ce_lambda: 2.0
+    bonded_atom_ce_lambda: 2.0
 
 dataset: zinc
 batch_size: 64

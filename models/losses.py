@@ -114,6 +114,24 @@ def bv_focal_loss(recon, x, mu, logvar):
         recon.contiguous().view(-1, recon.size(-1)),
         x.contiguous().view(-1),
     )
+
+def bond_type_ce_loss(recon, x, mu, logvar):
+    idxs = x.atom_types != ATOM_TYPE_HASH["_"]
+    recon = recon.bonds.bond_types[idxs]
+    x = x.bonds.bond_types[idxs]
+    return F.cross_entropy(
+        recon.contiguous().view(-1, recon.size(-1)),
+        x.contiguous().view(-1),
+    )
+
+def bonded_atom_ce_loss(recon, x, mu, logvar):
+    idxs = torch.logical_and((x.atom_types != ATOM_TYPE_HASH["_"]).unsqueeze(-1), x.bonds.bond_types != BOND_TYPE_HASH["_"])
+    recon = recon.bonds.bonded_atoms[idxs]
+    x = x.bonds.bonded_atoms[idxs]
+    return F.cross_entropy(
+        recon.contiguous().view(-1, recon.size(-1)),
+        x.contiguous().view(-1),
+    )
         
 def combine_losses(loss_fns, cfg, *args):
     ret = 0
@@ -129,6 +147,6 @@ def combine_losses(loss_fns, cfg, *args):
 
 def get_loss_fn(model_name, cfg):
     loss_fns = {
-        'vae': [ atom_ce_loss, kp_ce_loss, kl_loss, bv_ce_loss, bv_focal_loss ]
+        'vae': [ atom_ce_loss, kp_ce_loss, kl_loss, bond_type_ce_loss, bonded_atom_ce_loss ]
     }[model_name]
     return lambda *args: combine_losses(loss_fns, cfg, *args)

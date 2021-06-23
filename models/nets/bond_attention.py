@@ -42,7 +42,7 @@ class BondAttentionFixed(nn.Module):
             if is_padded:
                 start += 1
                 end += 1
-            if end >= bonds.data.size(1): continue
+            if end >= bonds.bond_types.size(1): continue
             out[batch, end] += x[batch, start]
             if not self.one_way:
                 out[batch, start] += x[batch, end]

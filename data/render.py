@@ -102,7 +102,8 @@ def get_kp_meshes(tmol, alpha=255):
             make_bond_cyl(coords[i], coords[i-1], BOND_TYPE_HASH[Chem.BondType.SINGLE], meshes, alpha)
     if tmol.bonds is not None:
         for start, end, bond in tmol.bonds.get_all_indexes():
-            make_bond_cyl(coords[start], coords[end], bond, meshes, alpha)
+            if tmol.atom_types[start] not in [ATOM_TYPE_HASH['_'], ATOM_TYPE_HASH['^']] and tmol.atom_types[end] not in [ATOM_TYPE_HASH['_'], ATOM_TYPE_HASH['^']]:
+                make_bond_cyl(coords[start], coords[end], bond, meshes, alpha)
         
         
     return meshes
@@ -193,10 +194,10 @@ def render_tmol(tmol, tmol_template=None, dims=(300,300)):
     tmola = tmol.argmax()
     imgs = []
     if tmol_template.molgrid is not None:
-        imgs.append(render_molgrid(tmola))
+        imgs.append(render_molgrid(tmola, dims=dims))
     if tmol_template.atom_types is not None:
         if tmol_template.kps is not None or tmol_template.kps_1h is not None:
-            imgs.append(render_kp(tmola))
+            imgs.append(render_kp(tmola, dims))
         else:
             imgs.append(render_text(tmola.atom_str(), dims))
     if tmol.bonds is not None:

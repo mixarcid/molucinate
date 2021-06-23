@@ -32,11 +32,12 @@ def bond_iou(recon, x):
 
 def perfect_topo_acc(recon, x):
     rets = []
-    for batch in range(x.bonds.data.size(0)):
+    for batch in range(x.atom_types.size(0)):
         rb = recon[batch].argmax()
         xb = x[batch]
         idxs = xb.atom_types != ATOM_TYPE_HASH["_"]
-        rets.append(float((rb.bonds.data[idxs] == xb.bonds.data[idxs]).all() and (rb.atom_types == xb.atom_types).all()))
+        indexes_same = rb.bonds.get_all_indexes() == xb.bonds.get_all_indexes()
+        rets.append(float(indexes_same and (rb.atom_types == xb.atom_types).all()))
     return torch.mean(torch.tensor(rets))
 
 def get_recon_metrics(recon, x):
