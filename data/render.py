@@ -192,8 +192,11 @@ MOL_TMP_FILE = './test_output/mol_tmp.sdf'
 PNG_TMP_FILE = './test_output/mol_tmp.png'
 def render_kp_pymol(tmol, dims):
     mol = tmol.get_mol()
-    with Chem.SDWriter(MOL_TMP_FILE) as f:
+    f = Chem.SDWriter(MOL_TMP_FILE)
+    try:
         f.write(mol)
+    except: return np.full((*dims, 3), 255, dtype=np.uint8)
+    f.close()
     run(['pymol', '-cq', 'data/pymol_render.py'])
     return cv2.imread(PNG_TMP_FILE)
         
