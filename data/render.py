@@ -7,12 +7,7 @@ import numpy as np
 import torch
 from rdkit import Chem
 from rdkit.Chem import Draw
-
-try:
-    import pymol2
-    USES_PYMOL = True
-except ImportError:
-    USES_PYMOL = False
+from subprocess import run
 
 try:
     from .chem import *
@@ -199,13 +194,7 @@ def render_kp_pymol(tmol, dims):
     mol = tmol.get_mol()
     with Chem.SDWriter(MOL_TMP_FILE) as f:
         f.write(mol)
-    with pymol2.PyMOL() as pm:
-        pm.cmd.load(MOL_TMP_FILE)
-        pm.cmd.zoom()
-        pm.preset.ball_and_stick(selection='all', mode=1)
-        pm.cmd.bg_color('black')
-        pm.cmd.set('ray_opaque_background', 1)
-        pm.cmd.png(PNG_TMP_FILE, *dims)
+    run(['pymol', '-cq', 'data/pymol_render.py'])
     return cv2.imread(PNG_TMP_FILE)
         
 def render_tmol(tmol, tmol_template=None, dims=(300,300)):
@@ -219,10 +208,10 @@ def render_tmol(tmol, tmol_template=None, dims=(300,300)):
         imgs.append(render_molgrid(tmola, dims=dims))
     if tmol_template.atom_types is not None:
         if tmol_template.kps is not None or tmol_template.kps_1h is not None:
-            if USES_PYMOL:
-                imgs.append(render_kp_pymol(tmola, dims))
-            else:
+            try:
                 imgs.append(render_kp(tmola, dims))
+            except:
+                imgs.append(render_kp_pymol(tmola, dims))
         else:
             imgs.append(render_text(tmola.atom_str(), dims))
     if tmol.bonds is not None:
