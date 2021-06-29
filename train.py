@@ -1,3 +1,5 @@
+from rdkit import Chem
+
 import hydra
 from collections import defaultdict
 from omegaconf import OmegaConf

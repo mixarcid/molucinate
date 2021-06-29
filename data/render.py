@@ -136,6 +136,7 @@ def scene2img(scene, dims):
     color, depth = r.render(scene)
     r,g,b = cv2.split(color)
     img = cv2.merge((b,g,r))
+    r.delete()
     return img
 
 def render_molgrid(tmol, prot_mg=None, thresh=0.5, dims=(300,300)):
@@ -197,7 +198,9 @@ def render_tmol(tmol, tmol_template=None, dims=(300,300)):
         imgs.append(render_molgrid(tmola, dims=dims))
     if tmol_template.atom_types is not None:
         if tmol_template.kps is not None or tmol_template.kps_1h is not None:
-            imgs.append(render_kp(tmola, dims))
+            try:
+                imgs.append(render_kp(tmola, dims))
+            except: pass
         else:
             imgs.append(render_text(tmola.atom_str(), dims))
     if tmol.bonds is not None:
@@ -215,7 +218,7 @@ def test_kp():
     print(Chem.MolToSmiles(mol))
     tm = TensorMol(mol)
     tm = tm.argmax()
-    render_kp_rt(tm)
+    render_kp(tm)
 
 def test_render_tmol():
     mol = Chem.MolFromMol2File('test_data/zinc100001.mol2')

@@ -21,3 +21,5 @@ results/*
 !*/.gitkeep
 tmp.sh
 cfg/platform/local.yaml
+*.out
+*.err

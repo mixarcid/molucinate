@@ -1,8 +1,9 @@
+from rdkit import Chem
+from rdkit.Geometry import Point3D
+
 from typing import List, Optional
 
 import torch
-from rdkit import Chem
-from rdkit.Geometry import Point3D
 import math
 import numpy as np
 from copy import deepcopy
