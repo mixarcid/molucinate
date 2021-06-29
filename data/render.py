@@ -7,6 +7,13 @@ import numpy as np
 import torch
 from rdkit import Chem
 from rdkit.Chem import Draw
+
+try:
+    import pymol2
+    USES_PYMOL = True
+except ImportError:
+    USES_PYMOL = False
+
 try:
     from .chem import *
     from .tensor_mol import TMCfg
@@ -136,7 +143,6 @@ def scene2img(scene, dims):
     color, depth = r.render(scene)
     r,g,b = cv2.split(color)
     img = cv2.merge((b,g,r))
-    r.delete()
     return img
 
 def render_molgrid(tmol, prot_mg=None, thresh=0.5, dims=(300,300)):
@@ -187,6 +193,21 @@ def render_text(text, dims):
                           scale, (0,0,0), 1, cv2.LINE_AA)
     return img
 
+MOL_TMP_FILE = './test_output/mol_tmp.sdf'
+PNG_TMP_FILE = './test_output/mol_tmp.png'
+def render_kp_pymol(tmol, dims):
+    mol = tmol.get_mol()
+    with Chem.SDWriter(MOL_TMP_FILE) as f:
+        f.write(mol)
+    with pymol2.PyMOL() as pm:
+        pm.cmd.load(MOL_TMP_FILE)
+        pm.cmd.zoom()
+        pm.preset.ball_and_stick(selection='all', mode=1)
+        pm.cmd.bg_color('black')
+        pm.cmd.set('ray_opaque_background', 1)
+        pm.cmd.png(PNG_TMP_FILE, *dims)
+    return cv2.imread(PNG_TMP_FILE)
+        
 def render_tmol(tmol, tmol_template=None, dims=(300,300)):
     if tmol_template is None:
         tmol_template = tmol
@@ -198,9 +219,10 @@ def render_tmol(tmol, tmol_template=None, dims=(300,300)):
         imgs.append(render_molgrid(tmola, dims=dims))
     if tmol_template.atom_types is not None:
         if tmol_template.kps is not None or tmol_template.kps_1h is not None:
-            try:
+            if USES_PYMOL:
+                imgs.append(render_kp_pymol(tmola, dims))
+            else:
                 imgs.append(render_kp(tmola, dims))
-            except: pass
         else:
             imgs.append(render_text(tmola.atom_str(), dims))
     if tmol.bonds is not None:

@@ -12,10 +12,13 @@ class CheckpointCallback(Callback):
 
     def cb(self, trainer, pl_module):
         if trainer.logger:
-            path = f"{self.results_path}{self.name}.pt"
-            torch.save(trainer.model.state_dict(), path)
+            #path = f"{self.results_path}{self.name}.pt"
+            #torch.save(trainer.model.state_dict(), path)
+            path = f"{self.results_path}{self.name}.ckpt"
+            trainer.save_checkpoint(path)
             try:
-                trainer.logger.experiment.log_artifact(path, "weights.pt")
+                #trainer.logger.experiment.log_artifact(path, "weights.pt")
+                trainer.logger.experiment.log_artifact(path, "weights.ckpt")
             except:
                 pass
     
