@@ -126,7 +126,7 @@ class ArNetDecoder(nn.Module):
         mask = torch.ones((dec.size(1), dec.size(1)), device=device, dtype=bool)
         mask = torch.triu(mask, diagonal=1)
         
-        dec = self.atn(dec, mask)
+        #dec = self.atn(dec, mask)
 
         bond_pred = self.bond_pred(dec)
         #out_valences = self.valence_out(dec)

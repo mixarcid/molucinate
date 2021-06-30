@@ -1,9 +1,10 @@
 #!/bin/bash
-#SBATCH -J install
+#SBATCH -J train
 #SBATCH -t 5-00:30:00
 #SBATCH --partition=any_gpu
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
+#SBATCH --constraint='1080Ti,TitanX'
 #SBATCH --output=R-%x.%j.out
 #SBATCH --error=R-%x.%j.err
 
@@ -15,4 +16,4 @@ export NEPTUNE_API_TOKEN="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vdWkubmVwdHVuZS5haSIsIm
 conda activate chem
 cd ..
 
-python train.py name=csb
+python train.py $@

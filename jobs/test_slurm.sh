@@ -8,5 +8,5 @@
 
 #SBATCH --cpus-per-task=1
 
-echo ${SLURM_JOB_NAME} allocated to ${SLURM_NODELIST}
+echo ${SLURM_JOB_NAME} allocated to ${SLURM_NODELIST} $SLURM_JOB_ID $@
 ls ..

@@ -1,12 +1,12 @@
-import pymol2
+from pymol import cmd, preset
 
 MOL_TMP_FILE = './test_output/mol_tmp.sdf'
 PNG_TMP_FILE = './test_output/mol_tmp.png'
 
-with pymol2.PyMOL() as pm:
-    pm.cmd.load(MOL_TMP_FILE)
-    pm.cmd.zoom()
-    pm.preset.ball_and_stick(selection='all', mode=1)
-    pm.cmd.bg_color('black')
-    pm.cmd.set('ray_opaque_background', 1)
-    pm.cmd.png(PNG_TMP_FILE, *dims)
+dims = (300, 300)
+cmd.load(MOL_TMP_FILE)
+cmd.zoom()
+preset.ball_and_stick(selection='all', mode=1)
+cmd.bg_color('black')
+cmd.set('ray_opaque_background', 1)
+cmd.png(PNG_TMP_FILE, *dims)
