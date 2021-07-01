@@ -77,8 +77,9 @@ class SelfAttention(nn.Module):
             axis=2
         )
 
-    def forward(self, x, mask):
-        x = x.permute(1, 0, 2)
+    def forward(self, x_in, mask):
+        x = x_in.permute(1, 0, 2)
         out, _ = self.atn(x, x, x, attn_mask=mask)
-        return out.permute(1, 0, 2)
-        
+        out = out.permute(1, 0, 2)
+        out = self.linear(out) + x_in
+        return out
