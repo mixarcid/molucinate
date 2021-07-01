@@ -51,7 +51,8 @@ class AtnFlat(nn.Module):
         self.linear = TimeDistributed(
             nn.Sequential(
                 nn.Linear(in_filters*2, out_filters, bias=False),
-                nn.BatchNorm1d(out_filters),
+                #nn.BatchNorm1d(out_filters),
+                nn.LayerNorm(out_filters),
                 nn.LeakyReLU(LEAK_VALUE)
             ),
             axis=2
@@ -66,6 +67,15 @@ class SelfAttention(nn.Module):
     def __init__(self, filters, heads):
         super().__init__()
         self.atn = nn.MultiheadAttention(filters, heads)
+        self.linear = TimeDistributed(
+            nn.Sequential(
+                nn.Linear(filters, filters, bias=False),
+                #nn.BatchNorm1d(out_filters),
+                nn.LayerNorm(filters),
+                nn.LeakyReLU(LEAK_VALUE)
+            ),
+            axis=2
+        )
 
     def forward(self, x, mask):
         x = x.permute(1, 0, 2)

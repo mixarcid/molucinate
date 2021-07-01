@@ -36,7 +36,8 @@ class IterativeSequential(nn.Module):
 def linear(in_f, out_f):
     return nn.Sequential(
         nn.Linear(in_f, out_f, bias=False),
-        nn.BatchNorm1d(out_f),
+        #nn.BatchNorm1d(out_f),
+        nn.LayerNorm(out_f),
         nn.LeakyReLU(LEAK_VALUE)
     )
 

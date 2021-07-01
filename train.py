@@ -1,5 +1,6 @@
 from rdkit import Chem
 
+import neptune.new as neptune
 import hydra
 from collections import defaultdict
 from omegaconf import OmegaConf
@@ -68,10 +69,39 @@ def get_params(cfg):
     params = flatten_dict(params)
     return params
 
+def get_checkpoint_cfg(cfg, run_id):
+    print(f"Downloading latest {run_id} checkpoint")
+    run = neptune.init(project="mixarcid/molucinate",
+                       run=run_id)
+    
+    ckpt_path = f"{cfg.platform.results_path}{run_id}_weights.ckpt"
+    run["artifacts/weights.ckpt"].download(ckpt_path)
+    cfg_path = f"{cfg.platform.results_path}{run_id}_cfg.yaml"
+    run["artifacts/cfg.yaml"].download(cfg_path)
+
+    new_cfg = OmegaConf.load(cfg_path)
+    new_cfg.platform = cfg.platform
+    return new_cfg, ckpt_path
+        
 @hydra.main(config_path='cfg', config_name="config")
 def train(cfg):
 
     TMCfg.set_cfg(cfg.data)
+
+    run_id_path = None
+    run_id = None
+    ckpt_path = None
+    if 'SLURM_JOB_ID' in os.environ:
+        job_id = os.environ['SLURM_JOB_ID']
+        run_id_path = f"{cfg.platform.results_path}{job_id}_run_id.txt"
+        try:
+            with open(run_id_path, 'r') as f:
+                run_id = f.read().strip()
+        except FileNotFoundError:
+            pass
+    
+    if run_id is not None:
+        cfg, ckpt_path = get_checkpoint_cfg(cfg, run_id)
     
     is_test = (cfg.debug.stop_at is not None) or cfg.debug.save_img
     #if is_test:
@@ -102,7 +132,11 @@ def train(cfg):
         logger = NeptuneLogger(project_name="mixarcid/molucinate",
                                experiment_name=cfg.name,
                                params=params,
-                               tags=tags)
+                               tags=tags,
+                               experiment_id=run_id)
+        if run_id_path is not None:
+            with open(run_id_path, 'w') as f:
+                f.write(logger.experiment.id)
 
     if cfg.debug.save_img:
         batch = next(iter(train_loader))
@@ -127,7 +161,8 @@ def train(cfg):
                          checkpoint_callback=checkpoint_callback,
                          callbacks = callbacks,
                          logger=logger,
-                         gradient_clip_val=cfg.grad_clip)
+                         gradient_clip_val=cfg.grad_clip,
+                         resume_from_checkpoint=ckpt_path)
 
     cfg_file = f'{cfg.platform.results_path}{cfg.name}.yaml'
     with open(cfg_file, 'w') as f:

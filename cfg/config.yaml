@@ -54,6 +54,9 @@ model:
     bond_enc_filters: 64
     bond_embed_size: 8
 
+    self_attention_layers: 0
+    self_attention_heads: 4
+
   scheduler:
     type: null
     min_lr: 1e-6

@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH -J train
-#SBATCH -t 5-00:30:00
+#SBATCH -t 5-00:00:00
 #SBATCH --partition=any_gpu
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
