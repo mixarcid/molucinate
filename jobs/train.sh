@@ -4,7 +4,7 @@
 #SBATCH --partition=any_gpu
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --constraint='1080Ti,TitanX'
+#SBATCH --constraint='1080Ti|TitanX|Xp'
 #SBATCH --output=R-%x.%j.out
 #SBATCH --error=R-%x.%j.err
 
