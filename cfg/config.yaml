@@ -30,6 +30,7 @@ data:
   max_atoms: 32
   max_valence: 4
   kekulize: true
+  pos_randomize_std: 0.5
 
 model:
   name: vae
@@ -89,8 +90,8 @@ batch_size: 64
 grad_clip: 0
 
 test:
-  run_id: MOL-154
-  use_cache: false
+  run_id: MOL-214
+  use_cache: true
 
 defaults:
   - platform: local

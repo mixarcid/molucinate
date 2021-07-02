@@ -5,6 +5,7 @@ from rdkit import Chem
 from rdkit.Chem import rdMolTransforms
 from torch.utils import data
 from copy import deepcopy
+import numpy as np
 
 try:
     from .tensor_mol import TensorMol, TMCfg
@@ -25,6 +26,7 @@ class ZincDataset(data.Dataset):
         self.num_train = int(len(self.files)*TT_SPLIT)
         self.zinc_dir = cfg.platform.zinc_dir
         self.kekulize = cfg.data.kekulize
+        self.pos_randomize_std = cfg.data.pos_randomize_std
         if cfg.debug.stop_at is not None:
             self.num_train = min(cfg.debug.stop_at, self.num_train)
             #self.is_train = True
@@ -54,25 +56,43 @@ class ZincDataset(data.Dataset):
             #raise
             tm = TensorMol(mol_og)
             #print("Couldn't fit molecule; undoing rotation")
-            
-        return tm
+
+        while True:
+            try:
+                mol_random = self.randomize_pos(mol)
+                tm_random = TensorMol(mol_random)
+                break
+            except:
+                pass
+                
+        return tm, tm_random
+
+    def randomize_pos(self, mol):
+        mol_random = deepcopy(mol)
+        for i, atom in enumerate(mol.GetAtoms()):
+            pos = mol_random.GetConformer().GetAtomPosition(i)
+            pos.x += np.random.normal(0.0, self.pos_randomize_std)
+            pos.y += np.random.normal(0.0, self.pos_randomize_std)
+            pos.z += np.random.normal(0.0, self.pos_randomize_std)
+            mol_random.GetConformer().SetAtomPosition(i, pos)
+        return mol_random
 
 @hydra.main(config_path='../cfg', config_name='config.yaml')
 def main(cfg):
     TMCfg.set_cfg(cfg.data)
     dataset = ZincDataset(cfg, False)
     print(len(dataset))
-    for i, tmol in enumerate(dataset):
-        #print(tmol.atom_str())
-        #render_kp_rt(tmol)
-        img = render_tmol(tmol, dims=(600, 600))
+    for i, (tmol, tmol_r) in enumerate(dataset):
+        print(tmol.atom_str())
+        render_kp_rt(tmol_r)
+        """img = render_tmol(tmol, dims=(600, 600))
         cv2.imwrite(f"test_output/zinc_{i}.png", img)
         for j in range(TMCfg.max_atoms):
             tm2 = deepcopy(tmol)
             tm2.atom_types[:j] = ATOM_TYPE_HASH['_']
             tm2.atom_types[j+1:] = ATOM_TYPE_HASH['_']
             img = render_kp(tm2, dims=(600, 600))
-            cv2.imwrite(f"test_output/za_{i}_{j}.png", img)
+            cv2.imwrite(f"test_output/za_{i}_{j}.png", img)"""
         if i > 10:
             break
     

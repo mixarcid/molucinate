@@ -3,6 +3,7 @@ import hydra
 import torch
 import random
 import numpy as np
+from omegaconf import OmegaConf
 
 from rdkit import RDLogger
 RDLogger.DisableLog('rdApp.*')
@@ -13,6 +14,7 @@ from data.dataloader import DataLoader
 from data.make_dataset import make_dataset
 from models.make_model import make_model
 from models.metrics import get_gen_metrics
+from utils.cfg import copy_template_cfg
 
 SEED = 49
 torch.manual_seed(SEED)
@@ -56,11 +58,17 @@ def test(cfg):
                              shuffle=True, worker_init_fn=seed_worker)
 
     path = f"{cfg.platform.results_path}{cfg.test.run_id}_weights.pt"
+    cfg_path = f"{cfg.platform.results_path}{cfg.test.run_id}_cfg.yaml"
     if not cfg.test.use_cache:
         print(f"Downloading latest {cfg.test.run_id} weights")
         run = neptune.init(project="mixarcid/molucinate",
                            run=cfg.test.run_id)
         run["artifacts/weights.pt"].download(path)
+        run["artifacts/cfg.yaml"].download(cfg_path)
+        
+    new_cfg = OmegaConf.load(cfg_path)
+    new_cfg.platform = cfg.platform
+    copy_template_cfg(cfg, new_cfg)
 
     print(f"Loading model for {cfg.test.run_id}")
     model = make_model(cfg)
