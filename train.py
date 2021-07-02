@@ -3,7 +3,7 @@ from rdkit import Chem
 import neptune.new as neptune
 import hydra
 from collections import defaultdict
-from omegaconf import OmegaConf
+from omegaconf import OmegaConf, DictConfig
 import torch
 import pytorch_lightning as pl
 from pytorch_lightning.loggers.neptune import NeptuneLogger
@@ -69,19 +69,33 @@ def get_params(cfg):
     params = flatten_dict(params)
     return params
 
-def get_checkpoint_cfg(cfg, run_id):
-    print(f"Downloading latest {run_id} checkpoint")
-    run = neptune.init(project="mixarcid/molucinate",
-                       run=run_id)
-    
-    ckpt_path = f"{cfg.platform.results_path}{run_id}_weights.ckpt"
-    run["artifacts/weights.ckpt"].download(ckpt_path)
-    cfg_path = f"{cfg.platform.results_path}{run_id}_cfg.yaml"
-    run["artifacts/cfg.yaml"].download(cfg_path)
+def copy_template_cfg(cfg, new_cfg):
+    for key in cfg:
+        if key in new_cfg:
+            if isinstance(cfg[key], DictConfig):
+                copy_template_cfg(cfg[key], new_cfg[key])
+            else:
+                cfg[key] = new_cfg[key]
 
+def get_checkpoint_cfg(cfg, run_id, use_cache=False):
+    ckpt_path = f"{cfg.platform.results_path}{run_id}_weights.ckpt"
+    cfg_path = f"{cfg.platform.results_path}{run_id}_cfg.yaml"
+    
+    if not use_cache:
+        print(f"Downloading latest {run_id} checkpoint")
+        run = neptune.init(project="mixarcid/molucinate",
+                           run=run_id)
+    
+        run["artifacts/weights.ckpt"].download(ckpt_path)
+        run["artifacts/cfg.yaml"].download(cfg_path)
+        
     new_cfg = OmegaConf.load(cfg_path)
     new_cfg.platform = cfg.platform
-    return new_cfg, ckpt_path
+
+    copy_template_cfg(cfg, new_cfg)
+    print(cfg)
+    
+    return cfg, ckpt_path
         
 @hydra.main(config_path='cfg', config_name="config")
 def train(cfg):
