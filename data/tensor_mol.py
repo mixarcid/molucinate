@@ -62,6 +62,10 @@ class TensorBonds(Collatable):
         for bond in mol.GetBonds():
             start_idx = bond.GetBeginAtomIdx()
             end_idx = bond.GetEndAtomIdx()
+            if start_idx > end_idx:
+                tmp = end_idx
+                end_idx = start_idx
+                start_idx = tmp
             cur_valence = atom_valences[end_idx]
             self.bond_types[end_idx][cur_valence] = BOND_TYPE_HASH[bond.GetBondType()]
             self.bonded_atoms[end_idx][cur_valence] = start_idx

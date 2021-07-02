@@ -35,6 +35,8 @@ def collate(batch):
             for attr in example.recurse()
         }
         return type(example)(**kwargs)
+    elif isinstance(example, tuple):
+        return tuple((collate([b[i] for b in batch]) for i in range(len(example))))
     else:
         return default_collate(batch)
 

@@ -43,9 +43,10 @@ class VAE(pl.LightningModule):
         return self.encode(tmol)
 
     def training_step(self, batch, batch_idx):
+        batch, batch_random = batch
         mu, logvar = self(batch)
         z = self.reparameterize(mu, logvar)
-        recon = self.decode(z, batch)
+        recon = self.decode(z, batch_random)
         loss, terms = self.loss_fn(recon, batch, mu, logvar)
         self.log('train_loss', loss, prog_bar=True)
         for name, term in terms.items():
@@ -87,6 +88,7 @@ class VAE(pl.LightningModule):
         return ret
 
     def shared_eval(self, batch, batch_idx, prefix):
+        batch, batch_random = batch
         mu, logvar = self(batch)
         z = self.reparameterize(mu, logvar)
         recon = self.decode(z, batch)

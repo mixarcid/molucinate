@@ -17,20 +17,21 @@ debug:
 #   max_atoms: 38
 #   max_valence: 6
 
-# data:
-#   grid_dim: 8
-#   grid_step: 0.5
-#   max_atoms: 16
-#   max_valence: 4
-#   kekulize: true
-
 data:
-  grid_dim: 16
+  grid_dim: 8
   grid_step: 0.5
-  max_atoms: 32
+  max_atoms: 16
   max_valence: 4
   kekulize: true
   pos_randomize_std: 0.5
+
+# data:
+#   grid_dim: 16
+#   grid_step: 0.5
+#   max_atoms: 32
+#   max_valence: 4
+#   kekulize: true
+#   pos_randomize_std: 0.5
 
 model:
   name: vae
@@ -48,7 +49,6 @@ model:
       - 2
       - 4
       - 8
-      - 16
     kp_enc_size: 128
     final_enc_size: 128
     num_gru_layers: 1
@@ -63,8 +63,8 @@ model:
     bond_enc_filters: 64
     bond_embed_size: 8
 
-    self_attention_layers: 0
-    self_attention_heads: 4
+    self_attention_layers: 1
+    self_attention_heads: 8
 
   scheduler:
     type: null
