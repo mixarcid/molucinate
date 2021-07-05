@@ -57,13 +57,11 @@ class ZincDataset(data.Dataset):
             tm = TensorMol(mol_og)
             #print("Couldn't fit molecule; undoing rotation")
 
-        while True:
-            try:
-                mol_random = self.randomize_pos(mol)
-                tm_random = TensorMol(mol_random)
-                break
-            except:
-                pass
+        try:
+            mol_random = self.randomize_pos(mol)
+            tm_random = TensorMol(mol_random)
+        except:
+            tm_random = tm
                 
         return tm, tm_random
 
