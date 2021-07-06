@@ -25,6 +25,7 @@ class TMCfg:
     grid_size = None
     grid_shape = None
     max_valence = None
+    use_kps = None
 
     def set_cfg(cfg):
         TMCfg.max_atoms = cfg.max_atoms
@@ -39,6 +40,7 @@ class TMCfg:
         TMCfg.grid_size = int(cfg.grid_dim/cfg.grid_step)
         TMCfg.grid_shape = (TMCfg.grid_size, TMCfg.grid_size, TMCfg.grid_size)
         TMCfg.max_valence = cfg.max_valence
+        TMCfg.use_kps = cfg.use_kps
     
 
 class TensorBonds(Collatable):
@@ -101,80 +103,7 @@ class TensorBonds(Collatable):
                         out.append([start, end, bond])
         else:
             raise Exception(f"Incorrect number of dims in TensorBonds data {self.bond_types.shape=}")
-        #poop
         return out
-
-class TensorBondsValence(Collatable):
-    data: torch.Tensor
-    all_indexes: Optional[List[List[int]]] = None
-        
-    def __init__(self, mol=None, data=None, device='cpu'):
-        if data is not None:
-            self.data = data
-            return
-        self.data = self.get_default_data(device)
-
-        atom_valences = torch.zeros((TMCfg.max_atoms, NUM_ACT_BOND_TYPES), dtype=torch.long)
-
-        for bond in mol.GetBonds():
-            start_idx = bond.GetBeginAtomIdx()
-            end_idx = bond.GetEndAtomIdx()
-            bond_index = BOND_TYPE_HASH[bond.GetBondType()]-1
-            cur_valence = atom_valences[end_idx][bond_index]
-            self.data[end_idx][bond_index][cur_valence] = start_idx
-            atom_valences[end_idx][bond_index] += 1
-
-    def get_default_data(self, device='cpu', batches=None, atoms=None):
-        if atoms is None:
-            atoms = TMCfg.max_atoms
-        if batches is None:
-            shape = (atoms, NUM_ACT_BOND_TYPES, TMCfg.max_valence)
-        else:
-            shape = (batches, atoms, NUM_ACT_BOND_TYPES, TMCfg.max_valence)
-        data = torch.zeros(shape, device=device, dtype=torch.long)
-        for i in range(atoms):
-            if batches is None:
-                data[i,:,:] = i
-            else:
-                data[:,i,:,:] = i
-        return data
-
-    def argmax(self, atom_types):
-        assert self.data.dtype == torch.float
-        data = torch.argmax(self.data, -1)
-        idxs = (atom_types != ATOM_TYPE_HASH["_"]) & (atom_types != ATOM_TYPE_HASH["^"])
-        if len(data.shape) == 3:
-            batches = None
-            atoms = None
-        else:
-            batches = self.data.shape[0]
-            atoms = self.data.shape[1]
-        ret_data = self.get_default_data(self.data.device, batches, atoms)
-        ret_data[idxs] = data[idxs]
-        return TensorBondsValence(data=ret_data)
-
-    def get_all_indexes(self):
-        assert self.data.dtype == torch.long
-        if self.data.shape[0] == 0: return []
-        if len(self.data.shape) == 3:
-            batches = None
-            atoms = None
-        else:
-            batches = self.data.shape[0]
-            atoms = self.data.shape[1]
-        mask = self.data != self.get_default_data(self.data.device, batches, atoms)
-        indexes = mask.nonzero(as_tuple=False)
-        #print(self.data)
-        #print(indexes)
-        # shape is [batch, start, end, bond]
-        end = deepcopy(indexes[...,-3])
-        indexes[...,-1] = indexes[...,-2] + 1
-        indexes[...,-2] = end
-        indexes[...,-3] = self.data[mask]
-        if len(indexes) == 0:
-            return []
-        indexes = set(indexes)
-        return indexes
 
 # just stores atom coords, atom types, and bonds
 # not used by any model directly, but useful intermediate
@@ -201,13 +130,6 @@ class TensorMolBasic:
         self.center_coords()
 
         self.bonds = TensorBonds(mol)
-        """for bond in mol.GetBonds():
-            self.bonds.add_bond(bond)
-            start_idx = bond.GetBeginAtomIdx()
-            end_idx = bond.GetEndAtomIdx()
-            bond_index = BOND_TYPE_HASH[bond.GetBondType()]-1
-            #self.atom_valences[start_idx][bond_index] += 1
-            self.atom_valences[end_idx][bond_index] += 1"""
             
 
     def center_coords(self):
@@ -252,20 +174,24 @@ class TensorMol(Collatable):
         #self.atom_valences = tmb.atom_valences
         self.bonds = tmb.bonds
 
-        sz = TMCfg.grid_size
-        # batch, atom_idx, width, height, depth
-        kp_shape = (TMCfg.max_atoms, sz, sz, sz)
-        self.kps = torch.zeros(kp_shape)
-        self.kps_1h = torch.zeros(kp_shape)
-        # batch, atom_type, width, height, depth
-        self.molgrid = torch.zeros((NUM_ATOM_TYPES, sz, sz, sz))
-
-        for i, (coord, atom) in enumerate(zip(tmb.coords, self.atom_types)):
-            if atom == ATOM_TYPE_HASH['_']: break
-            grid = self.gridify_atom(coord, atom)
-            self.kps[i] = grid
-            self.kps_1h[i] = self.gridify_atom(coord, atom, True)
-            self.molgrid[atom] += grid
+        if TMCfg.use_kps:
+            sz = TMCfg.grid_size
+            # batch, atom_idx, width, height, depth
+            kp_shape = (TMCfg.max_atoms, sz, sz, sz)
+            self.kps = torch.zeros(kp_shape)
+            self.kps_1h = torch.zeros(kp_shape)
+            # batch, atom_type, width, height, depth
+            self.molgrid = torch.zeros((NUM_ATOM_TYPES, sz, sz, sz))
+            for i, (coord, atom) in enumerate(zip(tmb.coords, self.atom_types)):
+                if atom == ATOM_TYPE_HASH['_']: break
+                grid = self.gridify_atom(coord, atom)
+                self.kps[i] = grid
+                self.kps_1h[i] = self.gridify_atom(coord, atom, True)
+                self.molgrid[atom] += grid
+        else:
+            self.kps = None
+            self.kps_1h = None
+            self.molgrid = None
 
     def gridify_atom(self, coord, atom, should_1h=False):
         #compute distances to each atom
@@ -355,6 +281,7 @@ class TensorMol(Collatable):
                 mol.AddBond(mol_idxs[start], mol_idxs[end], BOND_TYPE_LIST[bond])
             except RuntimeError:
                 pass
+        if self.kps_1h is None: return mol
         coords = self.get_coords()
         conformer = Chem.Conformer(mol.GetNumAtoms())
         if add_conformer:

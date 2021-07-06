@@ -26,6 +26,7 @@ class ZincDataset(data.Dataset):
         self.num_train = int(len(self.files)*TT_SPLIT)
         self.zinc_dir = cfg.platform.zinc_dir
         self.kekulize = cfg.data.kekulize
+        self.use_kps = cfg.data.use_kps
         self.pos_randomize_std = cfg.data.pos_randomize_std
         if cfg.debug.stop_at is not None:
             self.num_train = min(cfg.debug.stop_at, self.num_train)
@@ -47,20 +48,24 @@ class ZincDataset(data.Dataset):
         if self.kekulize:
             Chem.Kekulize(mol_og)
         mol = deepcopy(mol_og)
-        
-        try:
-            mat = rand_rotation_matrix()
-            rdMolTransforms.TransformConformer(mol.GetConformer(0), mat)
-            tm = TensorMol(mol)
-        except:
-            #raise
-            tm = TensorMol(mol_og)
-            #print("Couldn't fit molecule; undoing rotation")
 
-        try:
-            mol_random = self.randomize_pos(mol)
-            tm_random = TensorMol(mol_random)
-        except:
+        if self.use_kps:
+            try:
+                mat = rand_rotation_matrix()
+                rdMolTransforms.TransformConformer(mol.GetConformer(0), mat)
+                tm = TensorMol(mol)
+            except:
+                #raise
+                tm = TensorMol(mol_og)
+                #print("Couldn't fit molecule; undoing rotation")
+
+            try:
+                mol_random = self.randomize_pos(mol)
+                tm_random = TensorMol(mol_random)
+            except:
+                tm_random = tm
+        else:
+            tm = TensorMol(mol_og)
             tm_random = tm
                 
         return tm, tm_random
@@ -82,7 +87,8 @@ def main(cfg):
     print(len(dataset))
     for i, (tmol, tmol_r) in enumerate(dataset):
         print(tmol.atom_str())
-        render_kp_rt(tmol_r)
+        if cfg.data.use_kps:
+            render_kp_rt(tmol_r)
         """img = render_tmol(tmol, dims=(600, 600))
         cv2.imwrite(f"test_output/zinc_{i}.png", img)
         for j in range(TMCfg.max_atoms):

@@ -33,26 +33,31 @@ class AtnNetEncoder(nn.Module):
         #                           False)
 
 
-        self.kp_init_enc = TimeDistributed(
-            nn.Sequential(
-                nn.Conv3d(1, cfg.kp_filter_list[0],
-                          kernel_size=3, bias=False, padding=1),
-                nn.BatchNorm3d(cfg.kp_filter_list[0]),
-                nn.LeakyReLU(LEAK_VALUE)
-            ),
-            axis=2
-        )
-        self.kp_enc = IterativeSequential(
-            AtnDownConv, cfg.kp_filter_list, False
-        )
-        mul = get_linear_mul(cfg.kp_filter_list)
-        self.kp_flat_enc = AtnFlat(mul*cfg.kp_filter_list[-1],
-                                   cfg.kp_enc_size,
-                                   BondAttentionFixed, False)
+        self.use_kps = gcfg.data.use_kps
+        if self.use_kps:
+            self.kp_init_enc = TimeDistributed(
+                nn.Sequential(
+                    nn.Conv3d(1, cfg.kp_filter_list[0],
+                              kernel_size=3, bias=False, padding=1),
+                    nn.BatchNorm3d(cfg.kp_filter_list[0]),
+                    nn.LeakyReLU(LEAK_VALUE)
+                ),
+                axis=2
+            )
+            self.kp_enc = IterativeSequential(
+                AtnDownConv, cfg.kp_filter_list, False
+            )
+            mul = get_linear_mul(cfg.kp_filter_list)
+            self.kp_flat_enc = AtnFlat(mul*cfg.kp_filter_list[-1],
+                                       cfg.kp_enc_size,
+                                       BondAttentionFixed, False)
+            kp_enc_size = cfg.kp_enc_size
+        else:
+            kp_enc_size = 0
 
         self.bond_type_enc = nn.Embedding(NUM_BOND_TYPES, cfg.bond_embed_size)
 
-        final_enc_size = cfg.atom_enc_size + cfg.kp_enc_size + cfg.bond_embed_size*TMCfg.max_valence#cfg.valence_enc_size
+        final_enc_size = cfg.atom_enc_size + kp_enc_size + cfg.bond_embed_size*TMCfg.max_valence#cfg.valence_enc_size
         self.final_enc = AtnFlat(final_enc_size,
                                  cfg.final_enc_size,
                                  BondAttentionFixed, False)
@@ -83,16 +88,22 @@ class AtnNetEncoder(nn.Module):
 
         #venc = self.valence_embed(tmol.atom_valences, device)
         #venc = self.valence_enc(venc, tmol.bonds)
-        
-        kpenc = torch.unsqueeze(tmol.kps, 2)
-        kpenc = self.kp_init_enc(kpenc)
-        kpenc = self.kp_enc(kpenc, tmol.bonds)
-        kpenc = kpenc.contiguous().view(kpenc.size(0), kpenc.size(1), -1)
-        kpenc = self.kp_flat_enc(kpenc, tmol.bonds)
+
+        if self.use_kps:
+            kpenc = torch.unsqueeze(tmol.kps, 2)
+            kpenc = self.kp_init_enc(kpenc)
+            kpenc = self.kp_enc(kpenc, tmol.bonds)
+            kpenc = kpenc.contiguous().view(kpenc.size(0), kpenc.size(1), -1)
+            kpenc = self.kp_flat_enc(kpenc, tmol.bonds)
 
         batch, atoms = tmol.atom_types.shape
         bond_type_encs = [self.bond_type_enc(tmol.bonds.bond_types[:,:,i]) for i in range(TMCfg.max_valence)]
-        enc = torch.cat((aenc, kpenc, *bond_type_encs), 2)
+        
+        if self.use_kps:
+            enc = torch.cat((aenc, kpenc, *bond_type_encs), 2)
+        else:
+            enc = torch.cat((aenc, *bond_type_encs), 2)
+            
         enc = self.final_enc(enc, tmol.bonds)
 
         bond_enc = self.bond_enc(enc, tmol.bonds)

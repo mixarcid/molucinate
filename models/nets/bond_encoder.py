@@ -6,7 +6,7 @@ from .nn_utils import *
 
 import sys
 sys.path.insert(0, '../..')
-from data.tensor_mol import TensorBonds, TensorBondsValence, TMCfg
+from data.tensor_mol import TensorBonds, TMCfg
 from data.chem import *
 
 class BondEncoder(nn.Module):
