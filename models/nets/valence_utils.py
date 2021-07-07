@@ -10,10 +10,10 @@ class ValenceEmbedding(nn.Module):
 
     def __init__(self, embed_size):
         super().__init__()
-        self.embed = nn.Embedding(TMCfg.max_valence**NUM_ACT_BOND_TYPES, embed_size)
+        self.embed = nn.Embedding((TMCfg.max_valence+1)**NUM_ACT_BOND_TYPES, embed_size)
 
     def forward(self, valences, device):
-        mult = torch.tensor([TMCfg.max_valence**i for i in range(NUM_ACT_BOND_TYPES)], device=device).float()
+        mult = torch.tensor([(TMCfg.max_valence+1)**i for i in range(NUM_ACT_BOND_TYPES)], device=device).float()
         to_embed = torch.einsum('bav,v->ba', valences.float(), mult).long()
         return self.embed(to_embed)
         
@@ -25,7 +25,7 @@ class ValenceDecoder(nn.Module):
         self.fcs = nn.ModuleList()
         for i in range(NUM_ACT_BOND_TYPES):
             self.fcs.append(cls(hidden_size,
-                                TMCfg.max_valence,
+                                (TMCfg.max_valence+1),
                                 *args))
 
     def forward(self, *args):

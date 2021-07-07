@@ -56,8 +56,8 @@ def atom_ce_loss(recon, x, mu, logvar):
 
 def valence_ce_loss(recon, x, mu, logvar):
     idxs = x.atom_types != ATOM_TYPE_HASH["_"]
-    recon = recon.atom_valences[idxs]
-    x = x.atom_valences[idxs]
+    recon = recon.bonds.atom_valences[idxs]
+    x = x.bonds.atom_valences[idxs]
     return F.cross_entropy(
         recon.contiguous().view(-1, recon.size(-1)),
         x.contiguous().view(-1),
@@ -145,11 +145,13 @@ def combine_losses(loss_fns, cfg, *args):
             terms[name] = loss
     return ret, terms
 
-def get_loss_fn(model_name, cfg):
+def get_loss_fn(model_name, cfg, gcfg):
     loss_map = {
         'vae': [ atom_ce_loss, kl_loss, bond_type_ce_loss, bonded_atom_ce_loss ]
     }
     if TMCfg.use_kps:
         loss_map['vae'] += [ kp_ce_loss ]
+    if gcfg.predict_valence:
+        loss_map['vae'] += [ valence_ce_loss ]
     loss_fns = loss_map[model_name]
     return lambda *args: combine_losses(loss_fns, cfg, *args)

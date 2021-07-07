@@ -21,7 +21,7 @@ class VAE(pl.LightningModule):
         self.fc1 = nn.Linear(self.hidden_size, self.latent_size)
         # hidden => logvar
         self.fc2 = nn.Linear(self.hidden_size, self.latent_size)
-        self.loss_fn = get_loss_fn('vae', cfg.loss)
+        self.loss_fn = get_loss_fn('vae', cfg.loss, gcfg)
 
     def encode(self, tmol):
         h = self.encoder(tmol, self.device)
