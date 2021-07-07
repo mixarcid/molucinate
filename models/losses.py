@@ -150,6 +150,6 @@ def get_loss_fn(model_name, cfg):
         'vae': [ atom_ce_loss, kl_loss, bond_type_ce_loss, bonded_atom_ce_loss ]
     }
     if TMCfg.use_kps:
-        loss_map[vae] += [ kp_ce_loss ]
+        loss_map['vae'] += [ kp_ce_loss ]
     loss_fns = loss_map[model_name]
     return lambda *args: combine_losses(loss_fns, cfg, *args)

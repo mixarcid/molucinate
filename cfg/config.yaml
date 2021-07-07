@@ -23,7 +23,7 @@ data:
   max_atoms: 16
   max_valence: 4
   kekulize: true
-  use_kps: false
+  use_kps: true
   pos_randomize_std: 0.5
 
 # data:
