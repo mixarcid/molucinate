@@ -8,7 +8,7 @@ from .bond_attention import *
 from .bond_predictor import BondPredictor
 from .attention_utils import *
 from .valence_utils import *
-from .padding import get_padded_kps, get_padded_atypes, get_padded_valences
+from .padding import get_padded_kps, get_padded_atypes, get_padded_valences, get_padded_bonds
 
 import sys
 sys.path.insert(0, '../..')
@@ -54,10 +54,20 @@ class ArNetDecoder(nn.Module):
         else:
             kp_enc_size = 0
 
-        final_enc_size = cfg.atom_enc_size + kp_enc_size # + cfg.valence_enc_size
+        self.bond_type_enc = nn.Embedding(NUM_BOND_TYPES, cfg.bond_embed_size)
+
+        final_enc_size = cfg.atom_enc_size + kp_enc_size + cfg.bond_embed_size*TMCfg.max_valence# + cfg.valence_enc_size
         self.final_enc = AtnFlat(final_enc_size,
                                  cfg.final_enc_size,
                                  BondAttentionFixed, True)
+
+        # self.bond_enc = BondEncoder(cfg.final_enc_size,
+        #                             cfg.bond_enc_filters,
+        #                             cfg.bond_pred_filters)
+
+        # self.final_final_enc = AtnFlat(cfg.final_enc_size + cfg.bond_pred_filters,
+        #                                cfg.final_enc_size,
+        #                                BondAttentionFixed, True)
         
         self.lat_fc = nn.Sequential(
             nn.Linear(latent_size, cfg.dec_lat_fc_size, bias=False),
@@ -116,6 +126,9 @@ class ArNetDecoder(nn.Module):
         #venc = self.valence_embed(valences, device)
         #venc = self.valence_enc(venc, tmol.bonds, True)
 
+        bonds = get_padded_bonds(tmol, device, batch_size, truncate_atoms)
+        bond_type_encs = [self.bond_type_enc(bonds.bond_types[:,:,i]) for i in range(TMCfg.max_valence)]
+        
         if self.use_kps:
             kpenc = get_padded_kps(tmol, device, batch_size, truncate_atoms)
             kpenc = self.kp_init_enc(kpenc)
@@ -123,11 +136,15 @@ class ArNetDecoder(nn.Module):
             kpenc = kpenc.contiguous().view(kpenc.size(0), kpenc.size(1), -1)
             kpenc = self.kp_flat_enc(kpenc, tmol.bonds, True)
             
-            enc = torch.cat((aenc, kpenc), 2)
+            enc = torch.cat((aenc, kpenc, *bond_type_encs), 2)
         else:
-            enc = aenc
+            enc = torch.cat((aenc, *bond_type_encs), 2)
             
         enc = self.final_enc(enc, tmol.bonds, True)
+
+        #bond_enc = self.bond_enc(enc, tmol.bonds)
+        #enc = torch.cat((enc, bond_enc), 2)
+        #enc = self.final_final_enc(enc, tmol.bonds)
 
         lat_in = self.lat_fc(z).unsqueeze(1).repeat(1, atypes.size(1), 1)
         rnn_in = torch.cat([lat_in, enc], 2)

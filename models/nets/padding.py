@@ -2,7 +2,7 @@ import torch
 
 import sys
 sys.path.insert(0, '../..')
-from data.tensor_mol import TensorMol, TMCfg
+from data.tensor_mol import TensorMol, TensorBonds, TMCfg
 from data.chem import *
 
 def get_padded_atypes(tmol, device, batch_size, truncate):
@@ -15,6 +15,18 @@ def get_padded_atypes(tmol, device, batch_size, truncate):
     if truncate:
         return padded[:,:-1]
     return padded
+
+def get_padded_bonds(tmol, device, batch_size, truncate):
+    start_idx = torch.tensor([[[0]*TMCfg.max_valence]]*batch_size,
+                             device=device,
+                             dtype=torch.long)
+    if len(tmol.atom_types.shape) == 1:
+        return TensorBonds(None, start_idx, start_idx)
+    padded_types = torch.cat((start_idx, tmol.bonds.bond_types), 1)
+    padded_atoms = torch.cat((start_idx, tmol.bonds.bonded_atoms), 1)
+    if truncate:
+        return TensorBonds(None, padded_types[:,:-1], padded_atoms[:,:-1])
+    return TensorBonds(None, padded_types, padded_atoms)
 
 def get_padded_valences(tmol, device, batch_size, truncate):
     start_idx = torch.tensor([[[TMCfg.max_valence-1]*NUM_ACT_BOND_TYPES]]*batch_size,

@@ -89,6 +89,7 @@ model:
 dataset: zinc
 batch_size: 64
 grad_clip: 0
+predict_valence: true
 
 test:
   run_id: MOL-214
