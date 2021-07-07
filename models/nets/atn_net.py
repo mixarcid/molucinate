@@ -26,11 +26,13 @@ class AtnNetEncoder(nn.Module):
                                 BondAttentionFixed,
                                 False)
 
-        #self.valence_embed = ValenceEmbedding(cfg.valence_embed_size)
-        #self.valence_enc = AtnFlat(cfg.valence_embed_size,
-        #                           cfg.valence_enc_size,
-        #                           BondAttentionFixed,
-        #                           False)
+        self.predict_valence = gcfg.predict_valence
+        if self.predict_valence:
+            self.valence_embed = ValenceEmbedding(cfg.valence_embed_size)
+            self.valence_enc = AtnFlat(cfg.valence_embed_size,
+                                       cfg.valence_enc_size,
+                                       BondAttentionFixed,
+                                       False)
 
 
         self.use_kps = gcfg.data.use_kps
@@ -57,7 +59,7 @@ class AtnNetEncoder(nn.Module):
 
         self.bond_type_enc = nn.Embedding(NUM_BOND_TYPES, cfg.bond_embed_size)
 
-        final_enc_size = cfg.atom_enc_size + kp_enc_size + cfg.bond_embed_size*TMCfg.max_valence#cfg.valence_enc_size
+        final_enc_size = cfg.atom_enc_size + kp_enc_size + cfg.bond_embed_size*TMCfg.max_valence + cfg.valence_enc_size
         self.final_enc = AtnFlat(final_enc_size,
                                  cfg.final_enc_size,
                                  BondAttentionFixed, False)
@@ -86,8 +88,11 @@ class AtnNetEncoder(nn.Module):
         aenc = self.atom_embed(tmol.atom_types)
         aenc = self.atom_enc(aenc, tmol.bonds)
 
-        #venc = self.valence_embed(tmol.atom_valences, device)
-        #venc = self.valence_enc(venc, tmol.bonds)
+        if self.predict_valence:
+            venc = self.valence_embed(tmol.bonds.atom_valences, device)
+            venc = [self.valence_enc(venc, tmol.bonds)]
+        else:
+            venc = []
 
         if self.use_kps:
             kpenc = torch.unsqueeze(tmol.kps, 2)
@@ -100,9 +105,9 @@ class AtnNetEncoder(nn.Module):
         bond_type_encs = [self.bond_type_enc(tmol.bonds.bond_types[:,:,i]) for i in range(TMCfg.max_valence)]
         
         if self.use_kps:
-            enc = torch.cat((aenc, kpenc, *bond_type_encs), 2)
+            enc = torch.cat((aenc, kpenc, *bond_type_encs, *venc), 2)
         else:
-            enc = torch.cat((aenc, *bond_type_encs), 2)
+            enc = torch.cat((aenc, *bond_type_encs, *venc), 2)
             
         enc = self.final_enc(enc, tmol.bonds)
 

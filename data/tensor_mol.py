@@ -46,20 +46,24 @@ class TMCfg:
 class TensorBonds(Collatable):
     bond_types: torch.Tensor
     bonded_atoms: torch.Tensor
+    atom_valences: torch.Tensor
 
     def __init__(self, mol=None,
                  bond_types=None,
                  bonded_atoms=None,
+                 atom_valences=None,
                  device='cpu'):
         if mol is None:
             self.bond_types = bond_types
             self.bonded_atoms = bonded_atoms
+            self.atom_valences = atom_valences
             return
 
         self.bond_types = torch.zeros((TMCfg.max_atoms, TMCfg.max_valence), dtype=torch.long) #NUM_BOND_TYPES
         self.bonded_atoms = torch.zeros((TMCfg.max_atoms, TMCfg.max_valence), dtype=torch.long) #TMCfg.max_atoms
+        self.atom_valences = torch.zeros((TMCfg.max_atoms, NUM_ACT_BOND_TYPES), dtype=torch.long)
 
-        atom_valences = torch.zeros((TMCfg.max_atoms), dtype=torch.long)
+        tot_valences = torch.zeros((TMCfg.max_atoms), dtype=torch.long)
         
         for bond in mol.GetBonds():
             start_idx = bond.GetBeginAtomIdx()
@@ -68,16 +72,20 @@ class TensorBonds(Collatable):
                 tmp = end_idx
                 end_idx = start_idx
                 start_idx = tmp
-            cur_valence = atom_valences[end_idx]
-            self.bond_types[end_idx][cur_valence] = BOND_TYPE_HASH[bond.GetBondType()]
+            cur_valence = tot_valences[end_idx]
+            btype = BOND_TYPE_HASH[bond.GetBondType()]
+            self.bond_types[end_idx][cur_valence] = btype
             self.bonded_atoms[end_idx][cur_valence] = start_idx
-            atom_valences[end_idx] += 1
+            tot_valences[end_idx] += 1
+            self.atom_valences[end_idx][btype-1] += 1
+            self.atom_valences[start_idx][btype-1] += 1
 
     def argmax(self, atom_types):
         assert self.bond_types.dtype == torch.float and self.bonded_atoms.dtype == torch.float
         bond_types = torch.argmax(self.bond_types, -1)
         bonded_atoms = torch.argmax(self.bonded_atoms, -1)
-        return TensorBonds(None, bond_types, bonded_atoms)
+        atom_valences = torch.argmax(self.atom_valences, -1)
+        return TensorBonds(None, bond_types, bonded_atoms, atom_valences)
 
     def get_all_indexes(self):
         assert self.bond_types.dtype == torch.long and self.bonded_atoms.dtype == torch.long
@@ -166,12 +174,10 @@ class TensorMol(Collatable):
             self.kps = kps
             self.kps_1h = kps_1h
             self.atom_types = atom_types
-            #self.atom_valences = atom_valences
             self.bonds = bonds
             return
         tmb = TensorMolBasic(mol)
         self.atom_types = tmb.atom_types
-        #self.atom_valences = tmb.atom_valences
         self.bonds = tmb.bonds
 
         if TMCfg.use_kps:
@@ -212,10 +218,6 @@ class TensorMol(Collatable):
 
     def argmax(self):
         if self.atom_types.dtype != torch.long:
-            #if self.atom_valences is None:
-            #    atom_valences = None
-            #else:
-            #    atom_valences = torch.argmax(self.atom_valences, -1)
             atom_types = torch.argmax(self.atom_types, -1)
             bonds = self.bonds.argmax(atom_types)
             if self.kps is None and self.kps_1h is not None:
@@ -309,8 +311,8 @@ def test_basic():
     mol = get_test_mol()
     print(Chem.MolToSmiles(mol))
     tm = TensorMol(mol)
-    print(torch.amax(tm.molgrid))
-    print(tm.atom_valences)
+    #print(torch.amax(tm.molgrid))
+    print(tm.bonds.atom_valences)
 
 def test_collate():
     mol = get_test_mol()
@@ -361,6 +363,7 @@ def test_collated_bond_indexes():
     print(tm_collated.bonds.get_all_indexes())
     
 if __name__ == "__main__":
+    #test_basic()
     #test_mol_export()
     test_bond_recon()
     #test_collated_bond_indexes()
