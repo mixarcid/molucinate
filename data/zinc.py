@@ -5,15 +5,17 @@ from rdkit import Chem
 from rdkit.Chem import rdMolTransforms
 from torch.utils import data
 from copy import deepcopy
+from random import random, choice
 import numpy as np
 
 try:
     from .tensor_mol import TensorMol, TMCfg
     from .utils import rand_rotation_matrix
+    from .chem import *
 except ImportError:
     from tensor_mol import TensorMol, TMCfg
     from utils import rand_rotation_matrix
-
+    from chem import *
     
 # pre_mol = Chem.MolFromMol2File('/home/boris/Data/Zinc/zinc483323.mol2')
 
@@ -28,6 +30,7 @@ class ZincDataset(data.Dataset):
         self.kekulize = cfg.data.kekulize
         self.use_kps = cfg.data.use_kps
         self.pos_randomize_std = cfg.data.pos_randomize_std
+        self.atom_randomize_prob = cfg.data.atom_randomize_prob
         if cfg.debug.stop_at is not None:
             self.num_train = min(cfg.debug.stop_at, self.num_train)
             #self.is_train = True
@@ -67,7 +70,13 @@ class ZincDataset(data.Dataset):
         else:
             tm = TensorMol(mol_og)
             tm_random = tm
-                
+
+        for i in range(tm_random.atom_types.size(0)):
+            if random() < self.atom_randomize_prob:
+                tm_random.atom_types[i] = choice(list(ATOM_TYPE_HASH.values()))
+            if random() < self.atom_randomize_prob:
+                tm_random.bonds.atom_valences[i] = choice(list(range(TMCfg.max_valence+1)))
+            
         return tm, tm_random
 
     def randomize_pos(self, mol):

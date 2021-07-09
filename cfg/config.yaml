@@ -25,6 +25,7 @@ data:
   kekulize: true
   use_kps: true
   pos_randomize_std: 0.5
+  atom_randomize_prob: 0.1
 
 # data:
 #   grid_dim: 16
