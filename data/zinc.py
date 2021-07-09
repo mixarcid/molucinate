@@ -66,10 +66,10 @@ class ZincDataset(data.Dataset):
                 mol_random = self.randomize_pos(mol)
                 tm_random = TensorMol(mol_random)
             except:
-                tm_random = tm
+                tm_random = deepcopy(tm)
         else:
             tm = TensorMol(mol_og)
-            tm_random = tm
+            tm_random = deepcopy(tm)
 
         for i in range(tm_random.atom_types.size(0)):
             if random() < self.atom_randomize_prob:
