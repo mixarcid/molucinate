@@ -1,5 +1,6 @@
 from rdkit import Chem
 from rdkit.Geometry import Point3D
+from rdkit.Chem.MolStandardize import rdMolStandardize
 
 from typing import List, Optional
 
@@ -131,6 +132,8 @@ class TensorMolBasic:
         #self.atom_valences = torch.zeros((TMCfg.max_atoms, NUM_ACT_BOND_TYPES), dtype=torch.long)
 
         for i, atom in enumerate(mol.GetAtoms()):
+            charge = atom.GetFormalCharge()
+            #assert charge == 0
             atom_type = ATOM_TYPE_HASH[atom.GetSymbol()]
             self.atom_types[i] = atom_type
             pos = mol.GetConformer().GetAtomPosition(i)

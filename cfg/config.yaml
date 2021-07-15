@@ -12,10 +12,15 @@ debug:
   mol_cb_enable: true
 
 # data:
-#   grid_dim: 16
+#   grid_dim: 8
 #   grid_step: 0.5
-#   max_atoms: 38
-#   max_valence: 6
+#   max_atoms: 16
+#   max_valence: 4
+#   kekulize: true
+#   use_kps: true
+#   pos_randomize_std: 0.5
+#   atom_randomize_prob: 0.1
+#   canonicalize: true
 
 data:
   grid_dim: 8
@@ -26,14 +31,7 @@ data:
   use_kps: true
   pos_randomize_std: 0.5
   atom_randomize_prob: 0.1
-
-# data:
-#   grid_dim: 16
-#   grid_step: 0.5
-#   max_atoms: 32
-#   max_valence: 4
-#   kekulize: true
-#   pos_randomize_std: 0.5
+  canonicalize: true
 
 model:
   name: vae
@@ -77,10 +75,10 @@ model:
   loss:
     kl_lambda: 0.1
     l2_lambda: 1.0
-    kp_ce_lambda: 1.0
+    kp_ce_lambda: 0.6
     atom_ce_lambda: 1.0
     bv_ce_lambda: 0.0
-    bv_focal_lambda: 2.0
+    bv_focal_lambda: 0.0
     bond_ce_lambda: 0.0
     bond_focal_lambda: 0.0
     valence_ce_lambda: 1.0

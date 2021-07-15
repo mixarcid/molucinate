@@ -2,6 +2,7 @@
 *\#*
 *~
 *.clean
+*.csv
 *.dat
 *.log
 *__pycache__/*

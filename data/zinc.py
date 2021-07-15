@@ -28,6 +28,7 @@ class ZincDataset(data.Dataset):
         self.num_train = int(len(self.files)*TT_SPLIT)
         self.zinc_dir = cfg.platform.zinc_dir
         self.kekulize = cfg.data.kekulize
+        self.canonicalize = cfg.data.canonicalize
         self.use_kps = cfg.data.use_kps
         self.pos_randomize_std = cfg.data.pos_randomize_std
         self.atom_randomize_prob = cfg.data.atom_randomize_prob
@@ -50,6 +51,10 @@ class ZincDataset(data.Dataset):
         mol_og = Chem.MolFromMol2File(fname)
         if self.kekulize:
             Chem.Kekulize(mol_og)
+        if self.canonicalize:
+            order = Chem.CanonicalRankAtoms(mol_og, includeChirality=True)
+            mol_og = Chem.RenumberAtoms(mol_og, list(order))
+        
         mol = deepcopy(mol_og)
 
         if self.use_kps:
