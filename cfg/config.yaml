@@ -31,7 +31,7 @@ data:
   use_kps: true
   pos_randomize_std: 0.5
   atom_randomize_prob: 0.1
-  canonicalize: true
+  randomize_smiles: true
 
 model:
   name: vae

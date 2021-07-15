@@ -347,6 +347,20 @@ def test_bond_recon():
     from rdkit.Chem import Draw
     mol = get_test_mol()
     Chem.Kekulize(mol)
+    for n in range(3):
+        #order = Chem.CanonicalRankAtoms(mol, includeChirality=True)
+        Chem.MolToSmiles(mol, canonical=True)
+        
+        print(Chem.MolToSmiles(mol, canonical=True))
+        order = eval(mol.GetProp("_smilesAtomOutputOrder"))
+        print(order)
+        #order = mol.GetPropsAsDict(includePrivate=True, 
+        #                           includeComputed=True)['_smilesAtomOutputOrder']
+        mol = Chem.RenumberAtoms(mol, list(order))
+        print(TensorMol(mol).atom_str())
+        #print(Chem.MolToSmiles(mol))
+        print("")
+    
     print(Chem.MolToSmiles(mol))
     tm = TensorMol(mol)
     mol2 = tm.get_mol()
