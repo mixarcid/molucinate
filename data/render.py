@@ -159,6 +159,9 @@ def render_kp_rt(tmol, prot_mg=None):
 def get_multi(arr):
     num_y = len(arr)
     num_x = len(arr[0])
+    # no idea why this happens but it's super rare so whateva
+    if arr[0][0] is None:
+        return np.zeros((300, 300), dtype=np.uint8)
     base_y, base_x, channels = arr[0][0].shape
     out_shape = (num_y*base_y, num_x*base_x, channels)
     out = np.zeros(out_shape, dtype=np.uint8)

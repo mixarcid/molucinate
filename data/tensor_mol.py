@@ -133,7 +133,7 @@ class TensorMolBasic:
 
         for i, atom in enumerate(mol.GetAtoms()):
             charge = atom.GetFormalCharge()
-            #assert charge == 0
+            assert charge == 0
             atom_type = ATOM_TYPE_HASH[atom.GetSymbol()]
             self.atom_types[i] = atom_type
             pos = mol.GetConformer().GetAtomPosition(i)
