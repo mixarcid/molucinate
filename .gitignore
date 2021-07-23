@@ -6,6 +6,7 @@
 *.dat
 *.log
 *__pycache__/*
+*.prof
 *.pyc
 *.hydra/*
 .ipynb_checkpoints
