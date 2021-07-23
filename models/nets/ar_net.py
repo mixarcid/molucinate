@@ -39,7 +39,7 @@ class ArNetDecoder(nn.Module):
             self.kp_init_enc = TimeDistributed(
                 nn.Sequential(
                     nn.Conv3d(1, cfg.kp_filter_list[0],
-                              kernel_size=3, bias=False, padding=1),
+                              kernel_size=cfg.kernel_size, bias=False, padding=cfg.padding),
                     nn.BatchNorm3d(cfg.kp_filter_list[0]),
                     nn.LeakyReLU(LEAK_VALUE)
                 ),
@@ -111,7 +111,7 @@ class ArNetDecoder(nn.Module):
             )
             self.kp_out = TimeDistributed(
                 nn.Conv3d(filter_list[-1], 1,
-                          kernel_size=3, bias=False, padding=1),
+                          kernel_size=cfg.kernel_size, bias=False, padding=cfg.padding),
                 axis=2
             )
 

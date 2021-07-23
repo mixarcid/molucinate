@@ -298,6 +298,25 @@ class TensorMol(Collatable):
             mol.AddConformer(conformer)
         return mol
 
+def empty_mol():
+    sz = TMCfg.grid_size
+    kp_shape = (TMCfg.max_atoms, sz, sz, sz)
+    kps = torch.zeros(kp_shape)
+    kps_1h = torch.zeros(kp_shape)
+    molgrid = torch.zeros((NUM_ATOM_TYPES, sz, sz, sz))
+    atom_types = torch.zeros(TMCfg.max_atoms, dtype=torch.long)
+    bond_types = torch.zeros((TMCfg.max_atoms, TMCfg.max_valence), dtype=torch.long) #NUM_BOND_TYPES
+    bonded_atoms = torch.zeros((TMCfg.max_atoms, TMCfg.max_valence), dtype=torch.long) #TMCfg.max_atoms
+    atom_valences = torch.zeros((TMCfg.max_atoms, NUM_ACT_BOND_TYPES), dtype=torch.long)
+    return TensorMol(kps=kps,
+                     kps_1h=kps_1h,
+                     molgrid=molgrid,
+                     atom_types=atom_types,
+                     bonds=TensorBonds(bond_types=bond_types,
+                                       bonded_atoms=bonded_atoms,
+                                       atom_valences=atom_valences))
+                     
+    
 def get_test_mol():
     from omegaconf import OmegaConf
     cfg = OmegaConf.create({

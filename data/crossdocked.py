@@ -9,12 +9,12 @@ from random import random, choice
 import numpy as np
 
 try:
-    from .tensor_mol import TensorMol, TMCfg, empty_mol
+    from .tensor_mol import TensorMol, TMCfg
     from .mol_augment import MolAugment
     from .utils import rand_rotation_matrix
     from .chem import *
 except ImportError:
-    from tensor_mol import TensorMol, TMCfg, empty_mol
+    from tensor_mol import TensorMol, TMCfg
     from utils import rand_rotation_matrix
     from mol_augment import MolAugment
     from chem import *
@@ -22,17 +22,11 @@ except ImportError:
 # pre_mol = Chem.MolFromMol2File('/home/boris/Data/Zinc/zinc483323.mol2')
 
 TT_SPLIT = 0.9
-class ZincDataset(data.Dataset):
+class CrossDockedDataset(data.Dataset):
 
     def __init__(self, cfg, is_train):
-        self.is_train = is_train
-        self.profile = cfg.debug.profile
-        if cfg.debug.profile == True:
-            print("!")
-            self.files = [0]*cfg.debug.stop_at
-            self.num_train = int(len(self.files)*TT_SPLIT)
-            return
         self.files = np.array(open(f"{cfg.platform.zinc_dir}/files_filtered_{cfg.data.max_atoms}_{cfg.data.grid_dim}.txt").readlines())
+        self.is_train = is_train
         self.num_train = int(len(self.files)*TT_SPLIT)
         self.zinc_dir = cfg.platform.zinc_dir
         self.augment = MolAugment(cfg)
@@ -46,15 +40,7 @@ class ZincDataset(data.Dataset):
         else:
             return min(max(len(self.files) - self.num_train, 0), self.num_train)
 
-    def get_smiles_set(self):
-        ret = set()
-        for i in range(len(self)):
-            fname, smiles = self.files[i].strip().split('\t')
-            ret.add(smiles)
-        return ret
-    
     def __getitem__(self, index):
-        if self.profile: return empty_mol(), empty_mol()
         if not self.is_train:
             index += self.num_train
         fname, smiles = self.files[index].strip().split('\t')

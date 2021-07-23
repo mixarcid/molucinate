@@ -10,6 +10,7 @@ debug:
   stop_at: null
   save_img: false
   mol_cb_enable: true
+  profile: false
 
 # data:
 #   grid_dim: 8
@@ -23,9 +24,9 @@ debug:
 #   canonicalize: true
 
 data:
-  grid_dim: 8
+  grid_dim: 32
   grid_step: 0.5
-  max_atoms: 16
+  max_atoms: 32
   max_valence: 4
   kekulize: true
   use_kps: true
@@ -41,14 +42,20 @@ model:
   hidden_size: 512
   net:
     name: ar_net
+    kernel_size: 1
+    padding: 0
     atom_embed_size: 32
     atom_enc_size: 32
     valence_embed_size: 32
     valence_enc_size: 32
     kp_filter_list:
+      - 1
       - 2
       - 4
-      - 8
+      - 16
+      - 32
+      - 32
+      - 32
     kp_enc_size: 128
     final_enc_size: 128
     num_gru_layers: 1
@@ -91,7 +98,7 @@ grad_clip: 0
 predict_valence: true
 
 test:
-  run_id: MOL-253
+  run_id: MOL-257
   # run_id: MOL-214
   use_cache: true
 

@@ -65,6 +65,7 @@ def valence_ce_loss(recon, x, mu, logvar):
 
 def kp_ce_loss(recon, x, mu, logvar):
     idxs = x.atom_types != ATOM_TYPE_HASH["_"]
+    if torch.sum(idxs) == 0: idxs = torch.ones_like(idxs)
     x = torch.unsqueeze(x.kps_1h[idxs], 0)
     x = torch.argmax(x.contiguous().view(x.size(0), x.size(1), -1), -1)
     recon = torch.unsqueeze(recon.kps_1h[idxs], 0)
