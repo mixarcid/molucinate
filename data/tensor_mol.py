@@ -18,6 +18,8 @@ except ImportError:
     from utils import *
     from dataloader import Collatable, collate
 
+INIT_DEVICE = 'cpu'
+
 class TMCfg:
 
     max_atoms = None
@@ -54,17 +56,20 @@ class TensorBonds(Collatable):
                  bonded_atoms=None,
                  atom_valences=None,
                  device='cpu'):
+        
+        self.cached_indexes = None
+        
         if mol is None:
             self.bond_types = bond_types
             self.bonded_atoms = bonded_atoms
             self.atom_valences = atom_valences
             return
 
-        self.bond_types = torch.zeros((TMCfg.max_atoms, TMCfg.max_valence), dtype=torch.long) #NUM_BOND_TYPES
-        self.bonded_atoms = torch.zeros((TMCfg.max_atoms, TMCfg.max_valence), dtype=torch.long) #TMCfg.max_atoms
-        self.atom_valences = torch.zeros((TMCfg.max_atoms, NUM_ACT_BOND_TYPES), dtype=torch.long)
+        self.bond_types = torch.zeros((TMCfg.max_atoms, TMCfg.max_valence), dtype=torch.long, device=INIT_DEVICE) #NUM_BOND_TYPES
+        self.bonded_atoms = torch.zeros((TMCfg.max_atoms, TMCfg.max_valence), dtype=torch.long, device=INIT_DEVICE) #TMCfg.max_atoms
+        self.atom_valences = torch.zeros((TMCfg.max_atoms, NUM_ACT_BOND_TYPES), dtype=torch.long, device=INIT_DEVICE)
 
-        tot_valences = torch.zeros((TMCfg.max_atoms), dtype=torch.long)
+        tot_valences = torch.zeros((TMCfg.max_atoms), dtype=torch.long, device=INIT_DEVICE)
         
         for bond in mol.GetBonds():
             start_idx = bond.GetBeginAtomIdx()
@@ -89,6 +94,8 @@ class TensorBonds(Collatable):
         return TensorBonds(None, bond_types, bonded_atoms, atom_valences)
 
     def get_all_indexes(self):
+        if self.cached_indexes is not None:
+            return self.cached_indexes
         assert self.bond_types.dtype == torch.long and self.bonded_atoms.dtype == torch.long
         out = []
         if self.bond_types.shape[0] == 0:
@@ -112,6 +119,7 @@ class TensorBonds(Collatable):
                         out.append([start, end, bond])
         else:
             raise Exception(f"Incorrect number of dims in TensorBonds data {self.bond_types.shape=}")
+        self.cached_indexes = out
         return out
 
 # just stores atom coords, atom types, and bonds
@@ -125,11 +133,11 @@ class TensorMolBasic:
         
     def __init__(self, mol):
         # batch, atom_idx, dimension
-        self.coords = torch.zeros((TMCfg.max_atoms, 3))
+        self.coords = torch.zeros((TMCfg.max_atoms, 3), device=INIT_DEVICE)
         # batch, atom_idx, atom_type
-        self.atom_types = torch.zeros(TMCfg.max_atoms, dtype=torch.long)
+        self.atom_types = torch.zeros(TMCfg.max_atoms, dtype=torch.long, device=INIT_DEVICE)
         # batch, atom_idx, atom_valence
-        #self.atom_valences = torch.zeros((TMCfg.max_atoms, NUM_ACT_BOND_TYPES), dtype=torch.long)
+        #self.atom_valences = torch.zeros((TMCfg.max_atoms, NUM_ACT_BOND_TYPES), dtype=torch.long, , device=INIT_DEVICE)
 
         for i, atom in enumerate(mol.GetAtoms()):
             charge = atom.GetFormalCharge()
@@ -144,8 +152,8 @@ class TensorMolBasic:
             
 
     def center_coords(self):
-        min_coord = torch.zeros((3,))
-        max_coord = torch.zeros((3,))
+        min_coord = torch.zeros((3,), device=INIT_DEVICE)
+        max_coord = torch.zeros((3,), device=INIT_DEVICE)
         for i in range(3):
             min_coord[i] = min(self.coords[:,i])
             max_coord[i] = max(self.coords[:,i])
@@ -187,10 +195,10 @@ class TensorMol(Collatable):
             sz = TMCfg.grid_size
             # batch, atom_idx, width, height, depth
             kp_shape = (TMCfg.max_atoms, sz, sz, sz)
-            self.kps = torch.zeros(kp_shape)
-            self.kps_1h = torch.zeros(kp_shape)
+            self.kps = torch.zeros(kp_shape, device=INIT_DEVICE)
+            self.kps_1h = torch.zeros(kp_shape, device=INIT_DEVICE)
             # batch, atom_type, width, height, depth
-            self.molgrid = torch.zeros((NUM_ATOM_TYPES, sz, sz, sz))
+            self.molgrid = torch.zeros((NUM_ATOM_TYPES, sz, sz, sz), device=INIT_DEVICE)
             for i, (coord, atom) in enumerate(zip(tmb.coords, self.atom_types)):
                 if atom == ATOM_TYPE_HASH['_']: break
                 grid = self.gridify_atom(coord, atom)
@@ -203,21 +211,43 @@ class TensorMol(Collatable):
             self.molgrid = None
 
     def gridify_atom(self, coord, atom, should_1h=False):
-        #compute distances to each atom
-        dists = np.linalg.norm(TMCfg.grid_coords - coord.cpu().numpy(), axis=-1)
+        x, y, z = coord*2 + TMCfg.grid_dim
+        center_index = (int(y), int(x), int(z))
         if should_1h:
-            index = np.unravel_index(np.argmin(dists), dists.shape)
-            A = np.zeros(TMCfg.grid_shape)
-            A[index] = 1
+            A = torch.zeros(TMCfg.grid_shape)
+            A[center_index] = 1
         else:
-            d2 = (dists**2)
             r = ATOM_RADII_LIST[atom]
-            A0 = np.exp(-2*(d2/(r**2)))
-            A1 = (4/((np.e**2)*(r**2)))*d2 - (12/((np.e**2)*r))*dists + 9/(np.e**2)
-            A0_mask = dists < r
-            A1_mask = np.logical_and(r <= dists, dists < 1.5*r)
-            A = A0*A0_mask + A1*A1_mask
-        return torch.tensor(A)
+            indexes = []
+            vals = []
+            for xdiff in range(-int(r*3) - 1, int(r*3) + 1):
+                x = center_index[0] + xdiff
+                if x >= TMCfg.grid_dim*2 or x < 0: continue
+                for ydiff in range(-int(r*3) - 1, int(r*3) + 1):
+                    y = center_index[1] + ydiff
+                    if y >= TMCfg.grid_dim*2 or y < 0: continue
+                    for zdiff in range(-int(r*3) - 1, int(r*3) + 1):
+                        z = center_index[2] + zdiff
+                        if z >= TMCfg.grid_dim*2 or z < 0: continue
+                        index = (x, y, z)
+                        diff = TMCfg.grid_coords[index] - coord.cpu().numpy()
+                        d2 = np.dot(diff, diff)
+                        if d2 > (1.5*r)**2: continue
+                        
+                        dist = np.sqrt(d2)
+                        if dist < r:
+                            val = np.exp(-2*(d2/(r**2)))
+                        else:
+                            val = (4/((np.e**2)*(r**2)))*d2 - (12/((np.e**2)*r))*dist + 9/(np.e**2)
+                        indexes.append(index)
+                        vals.append(val)
+            
+            sz = TMCfg.grid_size
+            #print(len(indexes), indexes[0])
+            #print(len(vals), vals[0])
+            indexes = torch.tensor(indexes, dtype=torch.long).T
+            A = torch.sparse_coo_tensor(indexes, vals, size=(sz, sz, sz)).to_dense()
+        return A
 
     def argmax(self):
         if self.atom_types.dtype != torch.long:
@@ -301,13 +331,13 @@ class TensorMol(Collatable):
 def empty_mol():
     sz = TMCfg.grid_size
     kp_shape = (TMCfg.max_atoms, sz, sz, sz)
-    kps = torch.zeros(kp_shape)
-    kps_1h = torch.zeros(kp_shape)
-    molgrid = torch.zeros((NUM_ATOM_TYPES, sz, sz, sz))
-    atom_types = torch.zeros(TMCfg.max_atoms, dtype=torch.long)
-    bond_types = torch.zeros((TMCfg.max_atoms, TMCfg.max_valence), dtype=torch.long) #NUM_BOND_TYPES
-    bonded_atoms = torch.zeros((TMCfg.max_atoms, TMCfg.max_valence), dtype=torch.long) #TMCfg.max_atoms
-    atom_valences = torch.zeros((TMCfg.max_atoms, NUM_ACT_BOND_TYPES), dtype=torch.long)
+    kps = torch.zeros(kp_shape, device=INIT_DEVICE)
+    kps_1h = torch.zeros(kp_shape, device=INIT_DEVICE)
+    molgrid = torch.zeros((NUM_ATOM_TYPES, sz, sz, sz), device=INIT_DEVICE)
+    atom_types = torch.zeros(TMCfg.max_atoms, dtype=torch.long, device=INIT_DEVICE)
+    bond_types = torch.zeros((TMCfg.max_atoms, TMCfg.max_valence), dtype=torch.long, device=INIT_DEVICE) #NUM_BOND_TYPES
+    bonded_atoms = torch.zeros((TMCfg.max_atoms, TMCfg.max_valence), dtype=torch.long, device=INIT_DEVICE) #TMCfg.max_atoms
+    atom_valences = torch.zeros((TMCfg.max_atoms, NUM_ACT_BOND_TYPES), dtype=torch.long, device=INIT_DEVICE)
     return TensorMol(kps=kps,
                      kps_1h=kps_1h,
                      molgrid=molgrid,

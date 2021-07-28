@@ -39,15 +39,16 @@ class AtnNetEncoder(nn.Module):
         if self.use_kps:
             self.kp_init_enc = TimeDistributed(
                 nn.Sequential(
-                    nn.Conv3d(1, cfg.kp_filter_list[0],
+                    downsample(),
+                    nn.Conv3d(1, cfg.kp_filter_list[1],
                               kernel_size=cfg.kernel_size, bias=False, padding=cfg.padding),
-                    nn.BatchNorm3d(cfg.kp_filter_list[0]),
+                    nn.BatchNorm3d(cfg.kp_filter_list[1]),
                     nn.LeakyReLU(LEAK_VALUE)
                 ),
                 axis=2
             )
             self.kp_enc = IterativeSequential(
-                AtnDownConv, cfg.kp_filter_list, False
+                AtnDownConv, cfg.kp_filter_list[1:], cfg.kernel_size, cfg.padding, False
             )
             mul = get_linear_mul(cfg.kp_filter_list)
             self.kp_flat_enc = AtnFlat(mul*cfg.kp_filter_list[-1],
@@ -161,7 +162,7 @@ class AtnNetDecoder(nn.Module):
                                    BondAttentionFixed, False)
         self.kp_reshape = Unflatten((TMCfg.max_atoms, filter_list[0], width, width, width))
         self.kp_dec = IterativeSequential(
-            AtnUpConv, filter_list, False
+            AtnUpConv, filter_list, cfg.kernel_size, cfg.padding, False
         )
         self.kp_out = TimeDistributed(
             nn.Conv3d(filter_list[-1], 1,

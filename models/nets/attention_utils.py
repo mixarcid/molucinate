@@ -7,18 +7,27 @@ from .bond_attention import *
 
 class AtnDownConv(nn.Module):
 
-    def __init__(self, in_f, out_f, *args):
+    def __init__(self, in_f, out_f, kernel_size, padding, *args):
         super().__init__()
         self.atn = BondAttentionFixed(*args)
         self.conv = TimeDistributed(
             nn.Sequential(
-                nn.Conv3d(in_f*2, out_f, kernel_size=3, bias=False, padding=1),
+                nn.Conv3d(in_f*2, out_f, kernel_size=kernel_size, bias=False, padding=padding),
                 nn.BatchNorm3d(out_f),
                 nn.LeakyReLU(LEAK_VALUE),
                 downsample(),
             ),
             axis=2
         )
+        # self.conv = TimeDistributed(
+        #     nn.Sequential(
+        #         nn.Conv3d(in_f, out_f, kernel_size=kernel_size, bias=False, padding=padding),
+        #         # nn.BatchNorm3d(out_f),
+        #         nn.LeakyReLU(LEAK_VALUE),
+        #         downsample(),
+        #     ),
+        #     axis=2
+        # )
 
     def forward(self, x, *args):
         x = self.atn(x, *args)
@@ -26,18 +35,27 @@ class AtnDownConv(nn.Module):
 
 class AtnUpConv(nn.Module):
 
-    def __init__(self, in_f, out_f, *args):
+    def __init__(self, in_f, out_f, kernel_size, padding, *args):
         super().__init__()
         self.atn = BondAttentionFixed(*args)
         self.conv = TimeDistributed(
             nn.Sequential(
                 upsample(in_f*2, out_f),
-                nn.Conv3d(out_f, out_f, kernel_size=3, bias=False, padding=1),
+                nn.Conv3d(out_f, out_f, kernel_size=kernel_size, bias=False, padding=padding),
                 nn.BatchNorm3d(out_f),
                 nn.LeakyReLU(LEAK_VALUE),
             ),
             axis=2
         )
+        # self.conv = TimeDistributed(
+        #     nn.Sequential(
+        #         upsample(in_f, out_f),
+        #         # nn.Conv3d(out_f, out_f, kernel_size=kernel_size, bias=False, padding=padding),
+        #         nn.BatchNorm3d(out_f),
+        #         nn.LeakyReLU(LEAK_VALUE),
+        #     ),
+        #     axis=2
+        # )
 
     def forward(self, x, *args):
         x = self.atn(x, *args)
@@ -51,7 +69,7 @@ class AtnFlat(nn.Module):
         self.linear = TimeDistributed(
             nn.Sequential(
                 nn.Linear(in_filters*2, out_filters, bias=False),
-                #nn.BatchNorm1d(out_filters),
+                # nn.BatchNorm1d(out_filters),
                 nn.LayerNorm(out_filters),
                 nn.LeakyReLU(LEAK_VALUE)
             ),
@@ -70,7 +88,7 @@ class SelfAttention(nn.Module):
         self.linear = TimeDistributed(
             nn.Sequential(
                 nn.Linear(filters, filters, bias=False),
-                #nn.BatchNorm1d(out_filters),
+                # nn.BatchNorm1d(out_filters),
                 nn.LayerNorm(filters),
                 nn.LeakyReLU(LEAK_VALUE)
             ),

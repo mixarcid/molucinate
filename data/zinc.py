@@ -27,11 +27,6 @@ class ZincDataset(data.Dataset):
     def __init__(self, cfg, is_train):
         self.is_train = is_train
         self.profile = cfg.debug.profile
-        if cfg.debug.profile == True:
-            print("!")
-            self.files = [0]*cfg.debug.stop_at
-            self.num_train = int(len(self.files)*TT_SPLIT)
-            return
         self.files = np.array(open(f"{cfg.platform.zinc_dir}/files_filtered_{cfg.data.max_atoms}_{cfg.data.grid_dim}.txt").readlines())
         self.num_train = int(len(self.files)*TT_SPLIT)
         self.zinc_dir = cfg.platform.zinc_dir
@@ -54,7 +49,6 @@ class ZincDataset(data.Dataset):
         return ret
     
     def __getitem__(self, index):
-        if self.profile: return empty_mol(), empty_mol()
         if not self.is_train:
             index += self.num_train
         fname, smiles = self.files[index].strip().split('\t')
@@ -62,7 +56,7 @@ class ZincDataset(data.Dataset):
 
         mol_og = Chem.MolFromMol2File(fname)
         return self.augment.run(mol_og)
-
+        
 @hydra.main(config_path='../cfg', config_name='config.yaml')
 def main(cfg):
     TMCfg.set_cfg(cfg.data)
@@ -71,7 +65,7 @@ def main(cfg):
     for i, (tmol, tmol_r) in enumerate(dataset):
         print(tmol.atom_str())
         if cfg.data.use_kps:
-            render_kp_rt(tmol_r)
+            render_molgrid_rt(tmol)
         """img = render_tmol(tmol, dims=(600, 600))
         cv2.imwrite(f"test_output/zinc_{i}.png", img)
         for j in range(TMCfg.max_atoms):

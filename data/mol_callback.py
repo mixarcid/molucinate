@@ -76,4 +76,5 @@ class MolCallback(Callback):
             self.n += 1
 
     def on_epoch_end(self, trainer, pl_module):
+        if self.cb_n_batches is None: return
         self.cb(trainer, pl_module)

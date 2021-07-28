@@ -12,6 +12,7 @@ class BondAttentionFixed(nn.Module):
         self.one_way = one_way
 
     def forward(self, x, bonds, is_padded=False):
+        idxs = bonds.get_all_indexes()
         return torch.cat([x,x], 2)
         out = torch.zeros_like(x)
         for idxs in bonds.get_all_indexes():

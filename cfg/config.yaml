@@ -24,15 +24,15 @@ debug:
 #   canonicalize: true
 
 data:
-  grid_dim: 32
+  grid_dim: 16
   grid_step: 0.5
   max_atoms: 32
   max_valence: 4
-  kekulize: true
+  kekulize: false
+  randomize_smiles: false
   use_kps: true
   pos_randomize_std: 0.5
   atom_randomize_prob: 0.1
-  randomize_smiles: true
 
 model:
   name: vae
@@ -52,9 +52,8 @@ model:
       - 1
       - 2
       - 4
+      - 8
       - 16
-      - 32
-      - 32
       - 32
     kp_enc_size: 128
     final_enc_size: 128
@@ -93,7 +92,7 @@ model:
     bonded_atom_ce_lambda: 2.0
 
 dataset: zinc
-batch_size: 64
+batch_size: 8
 grad_clip: 0
 predict_valence: true
 

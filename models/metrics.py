@@ -42,7 +42,7 @@ def perfect_topo_acc(recon, x):
 
 def get_recon_metrics(recon, x):
     ret = {}
-    fns = [ perfect_topo_acc ]
+    fns = []# perfect_topo_acc ]
     if TMCfg.use_kps:
         fns += [ rmsd ]
     for fn in fns:
