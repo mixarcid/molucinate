@@ -24,7 +24,7 @@ debug:
 #   canonicalize: true
 
 data:
-  grid_dim: 16
+  grid_dim: 32
   grid_step: 0.5
   max_atoms: 32
   max_valence: 4
