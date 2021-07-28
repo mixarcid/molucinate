@@ -28,7 +28,7 @@ data:
   grid_step: 0.5
   max_atoms: 32
   max_valence: 4
-  kekulize: false
+  kekulize: true
   randomize_smiles: false
   use_kps: true
   pos_randomize_std: 0.5
