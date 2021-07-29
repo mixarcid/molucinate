@@ -213,7 +213,11 @@ class TensorMol(Collatable):
 
     def gridify_atom(self, coord, atom, should_1h=False):
         x, y, z = coord*2 + TMCfg.grid_dim
-        center_index = (int(y), int(x), int(z))
+        center_index = [int(y), int(x), int(z)]
+        # hmmmmm.....
+        for i in range(3):
+            center_index[i] = min(max(center_index[i], 0), TMCfg.grid_size - 1)
+        center_index = tuple(center_index)
         A = torch.zeros(TMCfg.grid_shape)
         if should_1h:
             A[center_index] = 1
