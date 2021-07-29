@@ -60,6 +60,7 @@ def train(cfg):
     #if is_test:
     #    torch.autograd.set_detect_anomaly(True)
     n_workers = 0 if is_test else cfg.platform.num_workers
+    # n_workers = cfg.platform.num_workers
     
     train_d = make_dataset(cfg, True)
     test_d = make_dataset(cfg, False)

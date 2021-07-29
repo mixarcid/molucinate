@@ -2,7 +2,7 @@ import torch
 import hydra
 import numpy as np
 from rdkit import Chem
-from rdkit.Chem import rdMolTransforms
+from rdkit.Chem import rdMolTransforms, Descriptors3D
 from torch.utils import data
 from copy import deepcopy
 from random import random, choice
@@ -55,6 +55,7 @@ class ZincDataset(data.Dataset):
         fname = self.zinc_dir + fname.split("/")[-1]
 
         mol_og = Chem.MolFromMol2File(fname)
+        rad_gyration = Descriptors3D.RadiusOfGyration(mol_og)
         return self.augment.run(mol_og)
         
 @hydra.main(config_path='../cfg', config_name='config.yaml')
@@ -65,7 +66,7 @@ def main(cfg):
     for i, (tmol, tmol_r) in enumerate(dataset):
         print(tmol.atom_str())
         if cfg.data.use_kps:
-            render_molgrid_rt(tmol)
+            render_kp_rt(tmol)
         """img = render_tmol(tmol, dims=(600, 600))
         cv2.imwrite(f"test_output/zinc_{i}.png", img)
         for j in range(TMCfg.max_atoms):

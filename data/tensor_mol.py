@@ -39,7 +39,7 @@ class TMCfg:
                                      cfg.grid_dim/2 + cfg.grid_step/2,
                                      cfg.grid_step))
         grids = np.meshgrid(*to_grid)
-        TMCfg.grid_coords = np.stack(grids, -1)
+        TMCfg.grid_coords = torch.tensor(np.stack(grids, -1))
         TMCfg.grid_size = int(cfg.grid_dim/cfg.grid_step)
         TMCfg.grid_shape = (TMCfg.grid_size, TMCfg.grid_size, TMCfg.grid_size)
         TMCfg.max_valence = cfg.max_valence
@@ -154,9 +154,10 @@ class TensorMolBasic:
     def center_coords(self):
         min_coord = torch.zeros((3,), device=INIT_DEVICE)
         max_coord = torch.zeros((3,), device=INIT_DEVICE)
+        nz_coords = self.coords[self.atom_types != ATOM_TYPE_HASH['_']]
         for i in range(3):
-            min_coord[i] = min(self.coords[:,i])
-            max_coord[i] = max(self.coords[:,i])
+            min_coord[i] = min(nz_coords[:,i])
+            max_coord[i] = max(nz_coords[:,i])
         center_coord = 0.5*(min_coord + max_coord)
         box_dims = max_coord - min_coord
         if torch.any(box_dims > TMCfg.grid_dim):
@@ -213,40 +214,29 @@ class TensorMol(Collatable):
     def gridify_atom(self, coord, atom, should_1h=False):
         x, y, z = coord*2 + TMCfg.grid_dim
         center_index = (int(y), int(x), int(z))
+        A = torch.zeros(TMCfg.grid_shape)
         if should_1h:
-            A = torch.zeros(TMCfg.grid_shape)
             A[center_index] = 1
         else:
             r = ATOM_RADII_LIST[atom]
             indexes = []
             vals = []
-            for xdiff in range(-int(r*3) - 1, int(r*3) + 1):
-                x = center_index[0] + xdiff
-                if x >= TMCfg.grid_dim*2 or x < 0: continue
-                for ydiff in range(-int(r*3) - 1, int(r*3) + 1):
-                    y = center_index[1] + ydiff
-                    if y >= TMCfg.grid_dim*2 or y < 0: continue
-                    for zdiff in range(-int(r*3) - 1, int(r*3) + 1):
-                        z = center_index[2] + zdiff
-                        if z >= TMCfg.grid_dim*2 or z < 0: continue
-                        index = (x, y, z)
-                        diff = TMCfg.grid_coords[index] - coord.cpu().numpy()
-                        d2 = np.dot(diff, diff)
-                        if d2 > (1.5*r)**2: continue
-                        
-                        dist = np.sqrt(d2)
-                        if dist < r:
-                            val = np.exp(-2*(d2/(r**2)))
-                        else:
-                            val = (4/((np.e**2)*(r**2)))*d2 - (12/((np.e**2)*r))*dist + 9/(np.e**2)
-                        indexes.append(index)
-                        vals.append(val)
-            
-            sz = TMCfg.grid_size
-            #print(len(indexes), indexes[0])
-            #print(len(vals), vals[0])
-            indexes = torch.tensor(indexes, dtype=torch.long).T
-            A = torch.sparse_coo_tensor(indexes, vals, size=(sz, sz, sz)).to_dense()
+            diff = int(r*3) + 1
+            min_x = max(center_index[0] - diff, 0)
+            min_y = max(center_index[1] - diff, 0)
+            min_z = max(center_index[2] - diff, 0)
+            max_x = min(center_index[0] + diff, TMCfg.grid_size - 1)
+            max_y = min(center_index[1] + diff, TMCfg.grid_size - 1)
+            max_z = min(center_index[2] + diff, TMCfg.grid_size - 1)
+
+            diff = TMCfg.grid_coords[min_x:max_x, min_y:max_y, min_z:max_z] - coord
+            d2 = torch.einsum('ijkl,ijkl->ijk', diff, diff)
+            dists = torch.sqrt(d2)
+            A0 = torch.exp(-2*(d2/(r**2)))
+            A1 = (4/((np.e**2)*(r**2)))*d2 - (12/((np.e**2)*r))*dists + 9/(np.e**2)
+            A0_mask = dists < r
+            A1_mask = torch.logical_and(r <= dists, dists < 1.5*r)
+            A[min_x:max_x, min_y:max_y, min_z:max_z] = A0*A0_mask + A1*A1_mask
         return A
 
     def argmax(self):
@@ -285,12 +275,12 @@ class TensorMol(Collatable):
             return self
 
     def get_coords(self):
-        coords = []
+        coords = torch.zeros(TMCfg.max_atoms, 3)
         kps = self.kps if self.kps_1h is None else self.kps_1h
-        for kp in kps:
+        for i, kp in enumerate(kps):
             index = np.unravel_index(torch.argmax(kp).cpu().numpy(), kp.shape)
-            coords.append(TMCfg.grid_coords[index[0], index[1], index[2]])
-        return torch.tensor(coords)
+            coords[i] = TMCfg.grid_coords[index[0], index[1], index[2]]
+        return coords
 
     def atom_str(self):
         ret = ''
