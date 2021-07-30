@@ -26,7 +26,7 @@ class MolCallback(Callback):
         return torch.normal(torch.zeros((self.batch_size, self.latent_size)), 1).to(device)
 
     def cb_batch(self, model, batch_idx, batch, trainer):
-        batch, batch_random = batch
+        (batch, batch_random), prop = batch
         batch = batch.to(model.device)
         mu, logvar = model(batch)
         recon = model.decode(mu, batch)

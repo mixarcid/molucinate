@@ -56,15 +56,15 @@ class ZincDataset(data.Dataset):
 
         mol_og = Chem.MolFromMol2File(fname)
         rad_gyration = Descriptors3D.RadiusOfGyration(mol_og)
-        return self.augment.run(mol_og)
+        return self.augment.run(mol_og), torch.tensor(rad_gyration, dtype=torch.float32)
         
 @hydra.main(config_path='../cfg', config_name='config.yaml')
 def main(cfg):
     TMCfg.set_cfg(cfg.data)
     dataset = ZincDataset(cfg, False)
     print(len(dataset))
-    for i, (tmol, tmol_r) in enumerate(dataset):
-        print(tmol.atom_str())
+    for i, ((tmol, tmol_r), prop) in enumerate(dataset):
+        print(tmol.atom_str(), prop, prop.dtype)
         if cfg.data.use_kps:
             render_kp_rt(tmol)
         """img = render_tmol(tmol, dims=(600, 600))

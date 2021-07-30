@@ -39,13 +39,13 @@ def focal_loss(input, target, alpha = 1.0, gamma = 2.0, eps = 1e-8):
     return loss
 
 
-def kl_loss(recon, x, mu, logvar):
+def kl_loss(recon, x, mu, logvar, prop, pred_prop):
     return -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
 
-def l2_loss(recon, x, mu, logvar):
+def l2_loss(recon, x, mu, logvar, prop, pred_prop):
     return ((recon.molgrid-x.molgrid)**2).mean()
 
-def atom_ce_loss(recon, x, mu, logvar):
+def atom_ce_loss(recon, x, mu, logvar, prop, pred_prop):
     recon = recon.atom_types
     x = x.atom_types
     return F.cross_entropy(
@@ -54,7 +54,7 @@ def atom_ce_loss(recon, x, mu, logvar):
         #ignore_index=ATOM_TYPE_HASH["_"]
     )
 
-def valence_ce_loss(recon, x, mu, logvar):
+def valence_ce_loss(recon, x, mu, logvar, prop, pred_prop):
     idxs = x.atom_types != ATOM_TYPE_HASH["_"]
     recon = recon.bonds.atom_valences[idxs]
     x = x.bonds.atom_valences[idxs]
@@ -63,7 +63,7 @@ def valence_ce_loss(recon, x, mu, logvar):
         x.contiguous().view(-1),
     )
 
-def kp_ce_loss(recon, x, mu, logvar):
+def kp_ce_loss(recon, x, mu, logvar, prop, pred_prop):
     idxs = x.atom_types != ATOM_TYPE_HASH["_"]
     if torch.sum(idxs) == 0: idxs = torch.ones_like(idxs)
     x = torch.unsqueeze(x.kps_1h[idxs], 0)
@@ -74,7 +74,7 @@ def kp_ce_loss(recon, x, mu, logvar):
         x.contiguous().view(-1)
     )
 
-def bond_loss(recon, x, mu, logvar, fn):
+def bond_loss(recon, x, mu, logvar, prop, pred_prop, fn):
     idxs = (x.atom_types != ATOM_TYPE_HASH["_"]).float()
     recon_bonds = recon.bonds.data
     x_bonds = x.bonds.data
@@ -92,13 +92,13 @@ def bond_loss(recon, x, mu, logvar, fn):
         x_bonds
     )
     
-def bond_ce_loss(recon, x, mu, logvar):
-    return bond_loss(recon, x, mu, logvar, F.cross_entropy)
+def bond_ce_loss(recon, x, mu, logvar, prop, pred_prop):
+    return bond_loss(recon, x, mu, logvar, prop, pred_prop, F.cross_entropy)
 
-def bond_focal_loss(recon, x, mu, logvar):
-    return bond_loss(recon, x, mu, logvar, focal_loss)
+def bond_focal_loss(recon, x, mu, logvar, prop, pred_prop):
+    return bond_loss(recon, x, mu, logvar, prop, pred_prop, focal_loss)
 
-def bv_ce_loss(recon, x, mu, logvar):
+def bv_ce_loss(recon, x, mu, logvar, prop, pred_prop):
     idxs = x.atom_types != ATOM_TYPE_HASH["_"]
     recon = recon.bonds.data[idxs]
     x = x.bonds.data[idxs]
@@ -107,7 +107,7 @@ def bv_ce_loss(recon, x, mu, logvar):
         x.contiguous().view(-1),
     )
 
-def bv_focal_loss(recon, x, mu, logvar):
+def bv_focal_loss(recon, x, mu, logvar, prop, pred_prop):
     idxs = x.atom_types != ATOM_TYPE_HASH["_"]
     recon = recon.bonds.data[idxs]
     x = x.bonds.data[idxs]
@@ -116,7 +116,7 @@ def bv_focal_loss(recon, x, mu, logvar):
         x.contiguous().view(-1),
     )
 
-def bond_type_ce_loss(recon, x, mu, logvar):
+def bond_type_ce_loss(recon, x, mu, logvar, prop, pred_prop):
     idxs = x.atom_types != ATOM_TYPE_HASH["_"]
     recon = recon.bonds.bond_types[idxs]
     x = x.bonds.bond_types[idxs]
@@ -125,7 +125,7 @@ def bond_type_ce_loss(recon, x, mu, logvar):
         x.contiguous().view(-1),
     )
 
-def bonded_atom_ce_loss(recon, x, mu, logvar):
+def bonded_atom_ce_loss(recon, x, mu, logvar, prop, pred_prop):
     idxs = torch.logical_and((x.atom_types != ATOM_TYPE_HASH["_"]).unsqueeze(-1), x.bonds.bond_types != BOND_TYPE_HASH["_"])
     recon = recon.bonds.bonded_atoms[idxs]
     x = x.bonds.bonded_atoms[idxs]
@@ -133,6 +133,9 @@ def bonded_atom_ce_loss(recon, x, mu, logvar):
         recon.contiguous().view(-1, recon.size(-1)),
         x.contiguous().view(-1),
     )
+
+def prop_mse_loss(recon, x, mu, logvar, prop, pred_prop):
+    return F.mse_loss(pred_prop, prop)
         
 def combine_losses(loss_fns, cfg, *args):
     ret = 0
@@ -148,7 +151,7 @@ def combine_losses(loss_fns, cfg, *args):
 
 def get_loss_fn(model_name, cfg, gcfg):
     loss_map = {
-        'vae': [ atom_ce_loss, kl_loss, bond_type_ce_loss, bonded_atom_ce_loss ]
+        'vae': [ atom_ce_loss, kl_loss, bond_type_ce_loss, bonded_atom_ce_loss, prop_mse_loss ]
     }
     if TMCfg.use_kps:
         loss_map['vae'] += [ kp_ce_loss ]

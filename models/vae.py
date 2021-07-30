@@ -1,7 +1,9 @@
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
+
 from .nets.make_net import make_encoder, make_decoder
+from .nets.property_predictor import PropertyPredictor
 from .losses import get_loss_fn
 from .metrics import get_recon_metrics
 
@@ -21,6 +23,9 @@ class VAE(pl.LightningModule):
         self.fc1 = nn.Linear(self.hidden_size, self.latent_size)
         # hidden => logvar
         self.fc2 = nn.Linear(self.hidden_size, self.latent_size)
+
+        self.prop_pred = PropertyPredictor(cfg)
+        
         self.loss_fn = get_loss_fn('vae', cfg.loss, gcfg)
 
     def encode(self, tmol):
@@ -43,11 +48,12 @@ class VAE(pl.LightningModule):
         return self.encode(tmol)
 
     def training_step(self, batch, batch_idx):
-        batch, batch_random = batch
+        (batch, batch_random), prop = batch
         mu, logvar = self(batch)
         z = self.reparameterize(mu, logvar)
         recon = self.decode(z, batch_random)
-        loss, terms = self.loss_fn(recon, batch, mu, logvar)
+        pred_prop = self.prop_pred(z)
+        loss, terms = self.loss_fn(recon, batch, mu, logvar, prop, pred_prop)
         self.log('train_loss', loss, prog_bar=True)
         for name, term in terms.items():
             self.log(f'train_{name}_loss', term)
@@ -88,15 +94,16 @@ class VAE(pl.LightningModule):
         return ret
 
     def shared_eval(self, batch, batch_idx, prefix):
-        batch, batch_random = batch
+        (batch, batch_random), prop = batch
         mu, logvar = self(batch)
         z = self.reparameterize(mu, logvar)
-        recon = self.decode(z, batch)
-        loss, terms = self.loss_fn(recon, batch, mu, logvar)
+        recon = self.decode(z, batch_random)
+        pred_prop = self.prop_pred(z)
+        loss, terms = self.loss_fn(recon, batch, mu, logvar, prop, pred_prop)
         self.log(f'{prefix}_loss', loss, prog_bar=True)
         for name, term in terms.items():
             self.log(f'{prefix}_{name}_loss', term)
         metrics = get_recon_metrics(recon, batch)
         for name, metric in metrics.items():
             self.log(f'{prefix}_{name}', metric)
-        return loss
+        return loss, prop, pred_prop
