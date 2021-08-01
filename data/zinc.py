@@ -5,6 +5,7 @@ from rdkit import Chem
 from rdkit.Chem import rdMolTransforms, Descriptors3D
 from torch.utils import data
 from copy import deepcopy
+from tqdm import tqdm
 from random import random, choice
 import numpy as np
 
@@ -57,14 +58,26 @@ class ZincDataset(data.Dataset):
         mol_og = Chem.MolFromMol2File(fname)
         rad_gyration = Descriptors3D.RadiusOfGyration(mol_og)
         return self.augment.run(mol_og), torch.tensor(rad_gyration, dtype=torch.float32)
-        
+
+    
+@hydra.main(config_path='../cfg', config_name='config.yaml')
+def calc_metrics(cfg):
+    import numpy as np
+    TMCfg.set_cfg(cfg.data)
+    dataset = ZincDataset(cfg, False)
+    props = []
+    for i, ((tmol, tmol_r), prop) in enumerate(tqdm(dataset)):
+        props.append(prop)
+        #if i > 1000: break
+    print(np.mean(props), np.std(props))
+    
 @hydra.main(config_path='../cfg', config_name='config.yaml')
 def main(cfg):
     TMCfg.set_cfg(cfg.data)
     dataset = ZincDataset(cfg, False)
     print(len(dataset))
     for i, ((tmol, tmol_r), prop) in enumerate(dataset):
-        print(tmol.atom_str(), prop, prop.dtype)
+        print(tmol.atom_str(), prop)
         if cfg.data.use_kps:
             render_kp_rt(tmol)
         """img = render_tmol(tmol, dims=(600, 600))
@@ -82,4 +95,5 @@ if __name__ == "__main__":
     from render import *
     import cv2
     from copy import deepcopy
-    main()
+    #main()
+    calc_metrics()

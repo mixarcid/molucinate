@@ -43,9 +43,9 @@ def train():
             "profile": False
         },
         "data": {
-            "grid_dim": 32,
+            "grid_dim": 8,
             "grid_step": 0.5,
-            "max_atoms": 32,
+            "max_atoms": 16,
             "max_valence": 4,
             "kekulize": False,
             "randomize_smiles": False,
@@ -61,8 +61,8 @@ def train():
     
     TMCfg.set_cfg(cfg.data)
 
-    batch_size = 4
-    n_workers = 0
+    batch_size = 64
+    n_workers = 64
     train_d = make_dataset(cfg, True)
     train_loader = DataLoader(train_d, batch_size=batch_size,
                               num_workers=n_workers, #pin_memory=True,
@@ -70,7 +70,7 @@ def train():
 
     for i, batch in enumerate(train_loader):
         print(i)
-        if i > 20: break
+        if i > 100: break
     
 if __name__ == '__main__':
     train()

@@ -18,10 +18,13 @@ class MolCallback(Callback):
         self.enabled = gcfg.debug.mol_cb_enable
 
     def checkpoint_imgs(self, trainer, log_name, fname, img_list):
-        img_path = self.results_path + fname + "_" + log_name + ".png"
-        export_multi(img_path, img_list)
-        if trainer.logger: trainer.logger.experiment.log_image(log_name, img_path)
-
+        try:
+            img_path = self.results_path + fname + "_" + log_name + ".png"
+            export_multi(img_path, img_list)
+            if trainer.logger: trainer.logger.experiment.log_image(log_name, img_path)
+        except:
+            print("Failed to export images")
+        
     def create_z(self, device):
         return torch.normal(torch.zeros((self.batch_size, self.latent_size)), 1).to(device)
 
