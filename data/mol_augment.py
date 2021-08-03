@@ -34,10 +34,10 @@ class MolAugment:
             Chem.MolToSmiles(mol_og, canonical=False)
             order = eval(mol_og.GetProp("_smilesAtomOutputOrder"))
             mol_og = Chem.RenumberAtoms(mol_og, list(order))
-        #else:
-        #    Chem.MolToSmiles(mol_og, canonical=True)
-        #    order = eval(mol_og.GetProp("_smilesAtomOutputOrder"))
-        #    mol_og = Chem.RenumberAtoms(mol_og, list(order))
+        else:
+           Chem.MolToSmiles(mol_og, canonical=True)
+           order = eval(mol_og.GetProp("_smilesAtomOutputOrder"))
+           mol_og = Chem.RenumberAtoms(mol_og, list(order))
             
             
         mol = deepcopy(mol_og)
