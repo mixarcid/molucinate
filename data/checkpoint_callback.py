@@ -18,7 +18,7 @@ class CheckpointCallback(Callback):
             trainer.save_checkpoint(path)
             try:
                 #trainer.logger.experiment.log_artifact(path, "weights.pt")
-                trainer.logger.experiment.log_artifact(path, "weights.ckpt")
+                trainer.logger.experiment.log_artifact(path, f"weights{postfix}.ckpt")
             except:
                 pass
     
