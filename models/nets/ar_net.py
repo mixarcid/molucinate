@@ -57,7 +57,9 @@ class ArNetDecoder(nn.Module):
         else:
             kp_enc_size = 0
 
-        self.bond_type_enc = nn.Embedding(NUM_BOND_TYPES, cfg.bond_embed_size)
+        self.has_bond_type_enc = cfg.bond_embed_size > 0
+        if self.has_bond_type_enc:
+            self.bond_type_enc = nn.Embedding(NUM_BOND_TYPES, cfg.bond_embed_size)
 
         final_enc_size = cfg.atom_enc_size + kp_enc_size + cfg.bond_embed_size*TMCfg.max_valence + cfg.valence_enc_size
         self.final_enc = AtnFlat(final_enc_size,
@@ -127,7 +129,10 @@ class ArNetDecoder(nn.Module):
         aenc = self.atom_enc(aenc, tmol.bonds, True)
 
         bonds = get_padded_bonds(tmol, device, batch_size, truncate_atoms)
-        bond_type_encs = [self.bond_type_enc(bonds.bond_types[:,:,i]) for i in range(TMCfg.max_valence)]
+        if self.has_bond_type_enc:
+            bond_type_encs = [self.bond_type_enc(bonds.bond_types[:,:,i]) for i in range(TMCfg.max_valence)]
+        else:
+            bond_type_encs = []
 
         if self.predict_valence:
             venc = self.valence_embed(bonds.atom_valences, device)

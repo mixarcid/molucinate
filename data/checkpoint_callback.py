@@ -10,11 +10,11 @@ class CheckpointCallback(Callback):
         self.results_path = gcfg.platform.results_path
         self.n = 0
 
-    def cb(self, trainer, pl_module):
+    def cb(self, trainer, pl_module, postfix):
         if trainer.logger:
             #path = f"{self.results_path}{self.name}.pt"
             #torch.save(trainer.model.state_dict(), path)
-            path = f"{self.results_path}{self.name}.ckpt"
+            path = f"{self.results_path}{self.name}{postfix}.ckpt"
             trainer.save_checkpoint(path)
             try:
                 #trainer.logger.experiment.log_artifact(path, "weights.pt")
@@ -26,9 +26,9 @@ class CheckpointCallback(Callback):
         if self.checkpoint_n_batches is None: return
         if self.n > self.checkpoint_n_batches:
             self.n = 0
-            self.cb(trainer, pl_module)
+            self.cb(trainer, pl_module, '')
         else:
             self.n += 1
 
     def on_epoch_end(self, trainer, pl_module):
-        self.cb(trainer, pl_module)
+        self.cb(trainer, pl_module, f'_{trainer.current_epoch}')

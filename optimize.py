@@ -4,11 +4,13 @@ import torch
 import random
 import numpy as np
 from omegaconf import OmegaConf
+import cv2
 
 from rdkit import RDLogger
 RDLogger.DisableLog('rdApp.*')
 
 from rdkit import Chem
+from rdkit.Chem import rdMolTransforms, Descriptors3D
 from tqdm import tqdm
 
 from pytorch_lightning.utilities.cloud_io import load as pl_load
@@ -36,47 +38,56 @@ def seed_worker(worker_id):
 def create_z(cfg, batch_size, device):
     return torch.normal(torch.zeros((batch_size, cfg.model.latent_size)), 1).to(device)
 
-def recon_metrics(cfg, model, batch_idx, batch):
+def render_optim(tmol, rad, rec_max):
+    orig = tmol != rec_max
+    img = render_tmol(tmol, rec_max)
+    og = (10, 10)
+    font_scale = 0.75
+    thickness = 1
+    text = "Orig." if orig else "Optim."
+    img = cv2.putText(img, "{} radius: {:.2f}".format(text, float(rad)), (10, 590), cv2.FONT_HERSHEY_DUPLEX, font_scale, (0, 0, 0), thickness, cv2.LINE_AA) 
+    return img
+                      
+def optimize_mols(cfg, model, batch_idx, batch, shrink):
     
     (batch, _), rad_gyr = batch
     batch = batch.to(model.device)
-    mu, logvar = model(batch)
-    recon = model.decode(mu)
+    z, logvar = model(batch)
+    gy_pred = model.prop_pred(z)
+    print(f"original pred: {gy_pred} (actual {rad_gyr})")
 
-    num_correct = 0
+    z = torch.nn.Parameter(z, requires_grad=True)
+    optim = torch.optim.SGD([z], lr=5e-1)
+    for i in range(500):
+        new_pred = model.prop_pred(z)
+        if not shrink:
+            new_pred = -new_pred
+        new_pred.backward()
+        optim.step()
+        optim.zero_grad()
+        #print(f"new pred at {i}: {new_pred}")
+
+    with torch.no_grad():
+        recon = model.decode(z)
+
+    img_list = []
     for i in range(batch.atom_types.size(0)):
-        mol1 = batch[i].get_mol()
-        mol2 = recon[i].argmax().get_mol()
-        if Chem.MolToSmiles(mol1) == Chem.MolToSmiles(mol2):
-            num_correct += 1
-
-    return num_correct
-
-def gen_molecules(cfg, model, f, idx, batch_size):
-    z = create_z(cfg, batch_size, model.device)
-    gen = model.decode(z)
-    for i in range(batch_size):
-        mol = gen[i].argmax().get_mol()
-        smiles = Chem.MolToSmiles(mol)
-        f.write(smiles)
-        f.write('\n')
-
-def test_batch(cfg, model, batch_idx, batch):
-    batch = batch.to(model.device)
-    mu, logvar = model(batch)
-    recon = model.decode(mu)
-    z = create_z(cfg, model.device)
-    gen = model.decode(z)
-
-    #print(get_gen_metrics(gen))
-    
-    for i in range(cfg.batch_size):
-        #break
-        render_kp_rt(gen[i].argmax())
-        #gen_mg_img = render_tmol(gen[i])
-        #mg_img = render_tmol(batch[i], recon[i])
-        #recon_mg_img = render_tmol(recon[i])
-            
+         mol1 = batch[i].get_mol()
+         rec_max = recon[i].argmax()
+         mol2 = rec_max.get_mol()
+         try:
+             Chem.SanitizeMol(mol2)
+         except:
+             return None, None
+         
+         rad_gyr_new = Descriptors3D.RadiusOfGyration(mol2)
+         print(f"Final actual: {rad_gyr_new}")
+         img_list += ([render_optim(batch[i], rad_gyr[i], rec_max),
+                       render_optim(rec_max, rad_gyr_new, rec_max)])
+         #render_kp_rt(batch[i])
+         #render_kp_rt(recon[i].argmax())
+    return img_list[0], img_list[1]
+         
 
 @hydra.main(config_path='cfg', config_name="config")
 def test(cfg):
@@ -84,7 +95,7 @@ def test(cfg):
     TMCfg.set_cfg(cfg.data)
 
     
-    batch_size = 10
+    batch_size = 1
     test_recon = True
     num_gen = 1000
 
@@ -112,27 +123,26 @@ def test(cfg):
     checkpoint = pl_load(ckpt_path, map_location=lambda storage, loc: storage)
     model.load_state_dict(checkpoint['state_dict'])
 
-    model.cuda()
+    #model.cuda()
     model.eval()
 
-    if test_recon:
-        num_correct = 0
-        tot = 0
-        with torch.no_grad():
-            for i, batch in enumerate(tqdm(test_loader)):
-                num_correct += recon_metrics(cfg, model, i, batch)
-                tot += batch_size
-                if tot > 1000:
-                    break
-                
-        mean = num_correct / tot
-        print(f"Recon acc: {mean}")
+    tot = 0
+    shrink = False
+    num_mols = 8
+    out_fname = f"figures/optim_{'small' if shrink else 'large'}.png"
+    img1_list = []
+    img2_list = []
+    for i, batch in enumerate(tqdm(test_loader)):
+        img1, img2 = optimize_mols(cfg, model, i, batch, shrink)
+        if img1 is None: continue
+        img1_list.append(img1)
+        img2_list.append(img2)
+        tot += batch_size
+        if tot > num_mols:
+            break
 
-    out_fname = f"{cfg.platform.results_path}{run_id}_gen.txt"
-    print(f"Generating molecules to {out_fname}")
-    with open(out_fname, 'w') as f:
-        for i in tqdm(range(num_gen)):
-            gen_molecules(cfg, model, f, i, batch_size)
+    print(f"Saving to {out_fname}")
+    export_multi(out_fname, [img1_list, img2_list])
 
 if __name__ == "__main__":
     test()

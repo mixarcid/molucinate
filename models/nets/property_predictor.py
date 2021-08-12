@@ -11,6 +11,7 @@ class PropertyPredictor(nn.Module):
             return nn.Sequential(
                 nn.Linear(in_f, out_f, bias=False),
                 nn.BatchNorm1d(out_f),
+                # todo: no
                 nn.LayerNorm(out_f),
                 nn.LeakyReLU(LEAK_VALUE)
             )

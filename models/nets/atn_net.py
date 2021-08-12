@@ -58,7 +58,9 @@ class AtnNetEncoder(nn.Module):
         else:
             kp_enc_size = 0
 
-        self.bond_type_enc = nn.Embedding(NUM_BOND_TYPES, cfg.bond_embed_size)
+        self.has_bond_type_enc = cfg.bond_embed_size > 0
+        if self.has_bond_type_enc:
+            self.bond_type_enc = nn.Embedding(NUM_BOND_TYPES, cfg.bond_embed_size)
 
         final_enc_size = cfg.atom_enc_size + kp_enc_size + cfg.bond_embed_size*TMCfg.max_valence + cfg.valence_enc_size
         self.final_enc = AtnFlat(final_enc_size,
@@ -103,7 +105,10 @@ class AtnNetEncoder(nn.Module):
             kpenc = self.kp_flat_enc(kpenc, tmol.bonds)
 
         batch, atoms = tmol.atom_types.shape
-        bond_type_encs = [self.bond_type_enc(tmol.bonds.bond_types[:,:,i]) for i in range(TMCfg.max_valence)]
+        if self.has_bond_type_enc:
+            bond_type_encs = [self.bond_type_enc(tmol.bonds.bond_types[:,:,i]) for i in range(TMCfg.max_valence)]
+        else:
+            bond_type_encs = []
         
         if self.use_kps:
             enc = torch.cat((aenc, kpenc, *bond_type_encs, *venc), 2)

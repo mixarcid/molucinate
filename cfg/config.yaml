@@ -101,8 +101,7 @@ grad_clip: 0
 predict_valence: true
 
 test:
-  run_id: MOL-257
-  # run_id: MOL-214
+  run_id: MOL-299
   use_cache: true
 
 defaults:
