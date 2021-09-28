@@ -170,6 +170,7 @@ class TensorMol(Collatable):
     kps: torch.Tensor
     kps_1h: torch.Tensor
     atom_types: torch.Tensor
+    coords: torch.Tensor
     #atom_valences: torch.Tensor
     bonds: TensorBonds
 
@@ -180,17 +181,20 @@ class TensorMol(Collatable):
                  kps_1h=None,
                  atom_types=None,
                  #atom_valences=None,
-                 bonds=None):
+                 bonds=None,
+                 coords=None):
         if mol is None:
             self.molgrid = molgrid
             self.kps = kps
             self.kps_1h = kps_1h
             self.atom_types = atom_types
             self.bonds = bonds
+            self.coords = coords
             return
         tmb = TensorMolBasic(mol)
         self.atom_types = tmb.atom_types
         self.bonds = tmb.bonds
+        self.coords = tmb.coords
 
         if TMCfg.use_kps:
             sz = TMCfg.grid_size
@@ -279,6 +283,8 @@ class TensorMol(Collatable):
             return self
 
     def get_coords(self):
+        if self.coords is not None:
+            return self.coords
         coords = torch.zeros(TMCfg.max_atoms, 3)
         kps = self.kps if self.kps_1h is None else self.kps_1h
         for i, kp in enumerate(kps):
@@ -296,13 +302,15 @@ class TensorMol(Collatable):
         mol = Chem.RWMol()
         mol_idxs = []
         idx = 0
+        ended = False
         for atom in self.atom_types:
-            if atom not in [ATOM_TYPE_HASH['_'], ATOM_TYPE_HASH['^']]:
+            if atom not in [ATOM_TYPE_HASH['_'], ATOM_TYPE_HASH['^']] and not ended:
                 mol.AddAtom(Chem.Atom(ATOM_TYPE_LIST[atom]))
                 mol_idxs.append(idx)
                 idx += 1
             else:
                 mol_idxs.append(None)
+                ended = True
         for start, end, bond in self.bonds.get_all_indexes():
             if mol_idxs[start] is None or mol_idxs[end] is None:
                 continue
@@ -313,12 +321,16 @@ class TensorMol(Collatable):
         if self.kps_1h is None: return mol
         coords = self.get_coords()
         conformer = Chem.Conformer(mol.GetNumAtoms())
+        
+        ended = False
         if add_conformer:
             for i, coord in enumerate(coords):
-                if self.atom_types[i] not in [ATOM_TYPE_HASH['_'], ATOM_TYPE_HASH['^']]:
+                if self.atom_types[i] not in [ATOM_TYPE_HASH['_'], ATOM_TYPE_HASH['^']] and not ended:
                     conformer.SetAtomPosition(mol_idxs[i], Point3D(float(coords[i][0]),
                                                                    float(coords[i][1]),
                                                                    float(coords[i][2])))
+                else:
+                    ended = True
             mol.AddConformer(conformer)
         return mol
 

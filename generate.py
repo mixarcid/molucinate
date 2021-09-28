@@ -18,7 +18,7 @@ from data.render import *
 from data.dataloader import DataLoader
 from data.make_dataset import make_dataset
 from models.make_model import make_model
-from models.metrics import get_gen_metrics
+from models.metrics import get_gen_metrics, rmsd_single
 from utils.cfg import get_checkpoint_cfg
 
 from models.vae import VAE
@@ -43,16 +43,17 @@ def recon_metrics(cfg, model, batch_idx, batch):
     mu, logvar = model(batch)
     recon = model.decode(mu)
 
-    num_correct = 0
+    rmsds = []
     for i in range(batch.atom_types.size(0)):
+        recon_max = recon[i].argmax()
         mol1 = batch[i].get_mol()
-        mol2 = recon[i].argmax().get_mol()
+        mol2 = recon_max.get_mol()
         if Chem.MolToSmiles(mol1) == Chem.MolToSmiles(mol2):
-            num_correct += 1
+            rmsds.append(rmsd_single(recon_max, batch[i]))
 
-    return num_correct
+    return rmsds
 
-def gen_molecules(cfg, model, f, idx, batch_size):
+def gen_molecules(cfg, model, f, idx, batch_size, prefix):
     z = create_z(cfg, batch_size, model.device)
     gen = model.decode(z)
     for i in range(batch_size):
@@ -60,7 +61,11 @@ def gen_molecules(cfg, model, f, idx, batch_size):
         smiles = Chem.MolToSmiles(mol)
         f.write(smiles)
         f.write('\n')
-
+        out_sd = f"{prefix}{idx*batch_size + i}.sdf"
+        w = Chem.SDWriter(out_sd)
+        w.write(mol)
+        w.close()
+            
 def test_batch(cfg, model, batch_idx, batch):
     batch = batch.to(model.device)
     mu, logvar = model(batch)
@@ -84,8 +89,8 @@ def test(cfg):
     TMCfg.set_cfg(cfg.data)
 
     
-    batch_size = 10
-    test_recon = True
+    batch_size = 16
+    test_recon = False
     num_gen = 1000
 
     n_workers = cfg.platform.num_workers
@@ -104,10 +109,10 @@ def test(cfg):
     #     run["artifacts/weights.pt"].download(path)
     #     run["artifacts/cfg.yaml"].download(cfg_path)
 
-    cfg, ckpt_path = get_checkpoint_cfg(cfg, cfg.test.run_id, cfg.test.use_cache)
-
     run_id = cfg.test.run_id
-    print(f"Loading model for {cfg.test.run_id}")
+    cfg, ckpt_path = get_checkpoint_cfg(cfg, run_id, cfg.test.use_cache)
+
+    print(f"Loading model for {run_id}")
     model = make_model(cfg)
     checkpoint = pl_load(ckpt_path, map_location=lambda storage, loc: storage)
     model.load_state_dict(checkpoint['state_dict'])
@@ -116,23 +121,27 @@ def test(cfg):
     model.eval()
 
     if test_recon:
-        num_correct = 0
+        rmsds = []
         tot = 0
         with torch.no_grad():
             for i, batch in enumerate(tqdm(test_loader)):
-                num_correct += recon_metrics(cfg, model, i, batch)
+                rmsds += recon_metrics(cfg, model, i, batch)
                 tot += batch_size
                 if tot > 1000:
                     break
-                
+
+        num_correct = len(rmsds)
+        rmsd = np.mean(rmsds)
         mean = num_correct / tot
         print(f"Recon acc: {mean}")
+        print(f"RMSD: {rmsd}")
 
     out_fname = f"{cfg.platform.results_path}{run_id}_gen.txt"
+    prefix = f"{cfg.platform.results_path}{run_id}_gen_"
     print(f"Generating molecules to {out_fname}")
     with open(out_fname, 'w') as f:
         for i in tqdm(range(num_gen)):
-            gen_molecules(cfg, model, f, i, batch_size)
+            gen_molecules(cfg, model, f, i, batch_size, prefix)
 
 if __name__ == "__main__":
     test()

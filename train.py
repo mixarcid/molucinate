@@ -124,7 +124,7 @@ def train(cfg):
     with open(cfg_file, 'w') as f:
         f.write(OmegaConf.to_yaml(cfg))
     if trainer.logger:
-        trainer.logger.experiment.log_artifact(cfg_file, "cfg.yaml")
+        trainer.logger.experiment.log_artifact(cfg_file)
     
     trainer.fit(model, train_loader, test_loader)
     

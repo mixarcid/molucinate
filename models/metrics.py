@@ -19,6 +19,14 @@ def rmsd(recon, x):
         rets.append(torch.sqrt(torch.mean(sd)))
     return torch.mean(torch.tensor(rets))
 
+def rmsd_single(recon, x):
+    rets = []
+    idxs = x.atom_types != ATOM_TYPE_HASH["_"]
+    #todo: only rmsd actual atoms
+    sd = (recon.get_coords()[idxs] - x.get_coords()[idxs])**2
+    rets.append(torch.sqrt(torch.mean(sd)))
+    return torch.mean(torch.tensor(rets))
+
 def bond_iou(recon, x):
     rets = []
     for batch in range(x.bonds.data.size(0)):

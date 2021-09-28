@@ -30,7 +30,7 @@ def get_molgrid_meshes(tmol, alpha, thresh):
     grid_dims = np.array([TMCfg.grid_dim, TMCfg.grid_dim, TMCfg.grid_dim])
     meshes = []
     for atom in ATOM_TYPE_LIST:
-        if atom in '_^': continue
+        if atom in '_^': break
         atoms = molgrid[ATOM_TYPE_HASH[atom]] > thresh
         smoothed = atoms#mcubes.smooth(atoms)
         vertices, triangles = mcubes.marching_cubes(smoothed, 0)
@@ -92,7 +92,7 @@ def get_kp_meshes(tmol, alpha=255):
     meshes = []
     for i, enc in enumerate(tmol.atom_types):
         if enc in [ATOM_TYPE_HASH['_'], ATOM_TYPE_HASH['^']]:
-            continue
+            break
         sm = trimesh.creation.uv_sphere(radius=ATOM_RADII_LIST[enc]/4)
         color = np.array([0,0,0,alpha])
         color[:-1] = ATOM_COLORS[ATOM_TYPE_LIST[enc]]
@@ -119,8 +119,10 @@ def get_molgrid_scene(tmol, prot_mg=None, thresh=0.5):
         scene.add(mesh)
     return scene
 
-def get_kp_scene(tmol):
+def get_kp_scene(tmol, mol_uff=None):
     meshes = get_kp_meshes(tmol)
+    if mol_uff is not None:
+        meshes += get_kp_meshes(mol_uff, 100)
     #meshes += get_molgrid_meshes(tmol, 128, 0.5)
     scene = pyrender.Scene()
     for mesh in meshes:
@@ -148,8 +150,8 @@ def render_molgrid_rt(tmol, prot_mg=None):
     scene = get_molgrid_scene(tmol, prot_mg)
     pyrender.Viewer(scene, use_raymond_lighting=True)
 
-def render_kp(tmol, dims=(300,300)):
-    scene = get_kp_scene(tmol)
+def render_kp(tmol, dims=(300,300), mol_uff=None):
+    scene = get_kp_scene(tmol, mol_uff=mol_uff)
     return scene2img(scene, dims)
 
 def render_kp_rt(tmol, prot_mg=None):
@@ -203,7 +205,7 @@ def render_kp_pymol(tmol, dims):
     run(['pymol', '-cq', 'data/pymol_render.py'])
     return cv2.imread(PNG_TMP_FILE)
         
-def render_tmol(tmol, tmol_template=None, dims=(300,300)):
+def render_tmol(tmol, tmol_template=None, dims=(300,300), mol_uff=None):
     if tmol_template is None:
         tmol_template = tmol
     if tmol.atom_types is None:
@@ -214,10 +216,10 @@ def render_tmol(tmol, tmol_template=None, dims=(300,300)):
         imgs.append(render_molgrid(tmola, dims=dims))
     if tmol_template.atom_types is not None:
         if tmol_template.kps is not None or tmol_template.kps_1h is not None:
-            try:
-                imgs.append(render_kp(tmola, dims))
-            except:
-                imgs.append(render_kp_pymol(tmola, dims))
+            #try:
+            imgs.append(render_kp(tmola, dims, mol_uff=mol_uff))
+            #except:
+            #    imgs.append(render_kp_pymol(tmola, dims))
         else:
             imgs.append(render_text(tmola.atom_str(), dims))
     if tmol.bonds is not None:
