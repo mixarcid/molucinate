@@ -4,7 +4,7 @@ Here's the source code for MOLUCINATE (MOLecUlar ConvolutIoNal generATive modEl)
 How to get this running:
 
 ## 1. Install prereqs
-First install OpenBabel. Create a conda environment with Python >= 2.8, PyTorch, and RDKit. Then install pip requirements:
+First install OpenBabel. Create a conda environment with Python >= 2.8, PyTorch, and RDKit. Then install pip the requirements:
 ```bash
 pip install -r requirements-pip.txt
 ```
