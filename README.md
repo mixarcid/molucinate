@@ -12,7 +12,19 @@ pip install -r requirements-pip.txt
 ```bash
 ./download_zinc.sh ZINC_FOLDER_DESTINATION
 ```
-## 3. Start training
+## 3. Create local configuration file
+Create a file `cfg/platform/local.yaml'. This contains all the configuration that should differ per-computer. Add in this information:
+```yaml
+# @package _group_
+
+num_workers: NUM_DATALOADING_WORKERS
+
+zinc_dir: ZINC_FOLDER_DESTINATION # from above
+
+results_path: PATH_TO_RESULTS
+```
+
+## 4. Start training
 ```bash
 python train.py
 ```
