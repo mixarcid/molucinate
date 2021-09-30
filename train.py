@@ -77,7 +77,7 @@ def train(cfg):
     tags = []
     params = get_params(cfg)
 
-    if is_test:
+    if is_test or not cfg.use_neptune:
         logger = None
         print("Neptune logging disabled. The parameters are:")
         for key, val in params.items():

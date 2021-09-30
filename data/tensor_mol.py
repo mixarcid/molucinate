@@ -284,7 +284,7 @@ class TensorMol(Collatable):
 
     def get_coords(self):
         if self.coords is not None:
-            return self.coords
+            return self.coords.cpu()
         coords = torch.zeros(TMCfg.max_atoms, 3)
         kps = self.kps if self.kps_1h is None else self.kps_1h
         for i, kp in enumerate(kps):

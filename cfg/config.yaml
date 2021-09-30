@@ -12,17 +12,6 @@ debug:
   mol_cb_enable: true
   profile: false
 
-# data:
-#   grid_dim: 8
-#   grid_step: 0.5
-#   max_atoms: 16
-#   max_valence: 4
-#   kekulize: true
-#   use_kps: true
-#   pos_randomize_std: 0.5
-#   atom_randomize_prob: 0.1
-#   canonicalize: true
-
 data:
   grid_dim: 8
   grid_step: 0.5
@@ -99,6 +88,7 @@ dataset: zinc
 batch_size: 64
 grad_clip: 0
 predict_valence: true
+use_neptune: false
 
 test:
   run_id: MOL-299
