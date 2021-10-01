@@ -48,7 +48,7 @@ def get_checkpoint_cfg(cfg, run_id, use_cache=False):
     
     if not use_cache:
         print(f"Downloading latest {run_id} checkpoint")
-        run = neptune.init(project="mixarcid/molucinate",
+        run = neptune.init(project=cfg.neptune_project,
                            run=run_id)
     
         run["artifacts/weights.ckpt"].download(ckpt_path)

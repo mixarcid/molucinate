@@ -83,7 +83,7 @@ def train(cfg):
         for key, val in params.items():
             print(f"\t{key}: {val}")
     else:
-        logger = NeptuneLogger(project_name="mixarcid/molucinate",
+        logger = NeptuneLogger(project_name=cfg.neptune_project,
                                experiment_name=cfg.name,
                                params=params,
                                tags=tags,

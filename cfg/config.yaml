@@ -88,7 +88,9 @@ dataset: zinc
 batch_size: 64
 grad_clip: 0
 predict_valence: true
+
 use_neptune: false
+neptune_project: mixarcid/molucinate
 
 test:
   run_id: MOL-299
