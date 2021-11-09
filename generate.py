@@ -90,12 +90,13 @@ def test(cfg):
 
     
     batch_size = 16
-    test_recon = False
+    test_recon = True
     num_gen = 1000
 
     n_workers = cfg.platform.num_workers
     test_d = make_dataset(cfg, False)
-    
+
+    dataset_name = cfg.dataset
     test_loader = DataLoader(test_d, batch_size=batch_size,
                              num_workers=n_workers, #pin_memory=True,
                              shuffle=True, worker_init_fn=seed_worker)
@@ -121,6 +122,7 @@ def test(cfg):
     model.eval()
 
     if test_recon:
+        print(f"Testing recon on {dataset_name}")
         rmsds = []
         tot = 0
         with torch.no_grad():
@@ -135,6 +137,7 @@ def test(cfg):
         mean = num_correct / tot
         print(f"Recon acc: {mean}")
         print(f"RMSD: {rmsd}")
+        return
 
     out_fname = f"{cfg.platform.results_path}{run_id}_gen.txt"
     prefix = f"{cfg.platform.results_path}{run_id}_gen_"

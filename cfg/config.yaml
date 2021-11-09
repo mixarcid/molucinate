@@ -12,6 +12,17 @@ debug:
   mol_cb_enable: true
   profile: false
 
+# data:
+#   grid_dim: 8
+#   grid_step: 0.5
+#   max_atoms: 16
+#   max_valence: 4
+#   kekulize: true
+#   randomize_smiles: false
+#   use_kps: true
+#   pos_randomize_std: 0.5
+#   atom_randomize_prob: 0.1
+
 data:
   grid_dim: 8
   grid_step: 0.5

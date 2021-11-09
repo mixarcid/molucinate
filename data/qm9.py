@@ -1,0 +1,102 @@
+import torch
+import hydra
+import numpy as np
+from rdkit import Chem
+from rdkit.Chem import rdMolTransforms, Descriptors3D
+from torch.utils import data
+from copy import deepcopy
+from tqdm import tqdm
+from random import random, choice
+import numpy as np
+from glob import glob
+
+try:
+    from .tensor_mol import TensorMol, TMCfg, empty_mol
+    from .mol_augment import MolAugment
+    from .utils import rand_rotation_matrix
+    from .chem import *
+except ImportError:
+    from tensor_mol import TensorMol, TMCfg, empty_mol
+    from utils import rand_rotation_matrix
+    from mol_augment import MolAugment
+    from chem import *
+
+
+NUM_TRAIN = 97469
+NUM_TEST = 12184
+    
+class QM9Dataset(data.Dataset):
+
+    def __init__(self, cfg, is_train, is_val=False):
+        self.profile = cfg.debug.profile
+        self.files = np.array(open(f"{cfg.platform.qm9_dir}/files_filtered_{cfg.data.max_atoms}_{cfg.data.grid_dim}.txt").readlines())
+
+        if is_train:
+            self.files = self.files[:NUM_TRAIN]
+        elif is_val:
+            self.files = self.files[UM_TRAIN+NUM_TEST:]
+        else: # test
+            self.files = self.files[NUM_TRAIN:NUM_TRAIN+NUM_TEST]
+        
+        self.num_train = len(self.files)
+        self.augment = MolAugment(cfg)
+        self.qm9_dir = cfg.platform.qm9_dir
+        if cfg.debug.stop_at is not None:
+            self.num_train = min(cfg.debug.stop_at, self.num_train)
+            #self.is_train = True
+
+    def __len__(self):
+        return self.num_train
+
+    def get_smiles_set(self):
+        ret = set()
+        for i in range(len(self)):
+            fname, smiles = self.files[i].strip().split('\t')
+            ret.add(smiles)
+        return ret
+    
+    def __getitem__(self, index):
+        fname, smiles = self.files[index].strip().split('\t')
+        fname = self.qm9_dir + fname.split("/")[-1]
+        mol_og = Chem.MolFromMol2File(fname)
+        rad_gyration = Descriptors3D.RadiusOfGyration(mol_og)
+        return self.augment.run(mol_og), torch.tensor(rad_gyration, dtype=torch.float32)
+
+    
+@hydra.main(config_path='../cfg', config_name='config.yaml')
+def calc_metrics(cfg):
+    import numpy as np
+    TMCfg.set_cfg(cfg.data)
+    dataset = QM9Dataset(cfg, False)
+    props = []
+    for i, ((tmol, tmol_r), prop) in enumerate(tqdm(dataset)):
+        props.append(prop)
+        #if i > 1000: break
+    print(np.mean(props), np.std(props))
+    
+@hydra.main(config_path='../cfg', config_name='config.yaml')
+def main(cfg):
+    TMCfg.set_cfg(cfg.data)
+    dataset = QM9Dataset(cfg, False)
+    print(len(dataset))
+    for i, ((tmol, tmol_r), prop) in enumerate(dataset):
+        print(tmol.atom_str(), prop)
+        if cfg.data.use_kps:
+            render_kp_rt(tmol)
+        """img = render_tmol(tmol, dims=(600, 600))
+        cv2.imwrite(f"test_output/zinc_{i}.png", img)
+        for j in range(TMCfg.max_atoms):
+            tm2 = deepcopy(tmol)
+            tm2.atom_types[:j] = ATOM_TYPE_HASH['_']
+            tm2.atom_types[j+1:] = ATOM_TYPE_HASH['_']
+            img = render_kp(tm2, dims=(600, 600))
+            cv2.imwrite(f"test_output/za_{i}_{j}.png", img)"""
+        if i > 10:
+            break
+    
+if __name__ == "__main__":
+    from render import *
+    import cv2
+    from copy import deepcopy
+    main()
+    #calc_metrics()

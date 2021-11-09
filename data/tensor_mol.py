@@ -160,8 +160,8 @@ class TensorMolBasic:
             max_coord[i] = max(nz_coords[:,i])
         center_coord = 0.5*(min_coord + max_coord)
         box_dims = max_coord - min_coord
-        if torch.any(box_dims > TMCfg.grid_dim):
-            raise Exception(f"molecule is too big! box_dims={box_dims}")
+        #if torch.any(box_dims > TMCfg.grid_dim):
+        #    raise Exception(f"molecule is too big! box_dims={box_dims}")
         self.coords -= center_coord
 
 

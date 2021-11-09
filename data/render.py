@@ -44,7 +44,6 @@ def get_molgrid_meshes(tmol, alpha, thresh):
             meshes.append(pyrender.Mesh.from_trimesh(mesh))
     return meshes
 
-
 def transform_coords(coords):
     grid_dims = [TMCfg.grid_dim]*3
     trans = coords - np.array([0, 0, grid_dims[-1]])
@@ -212,8 +211,8 @@ def render_tmol(tmol, tmol_template=None, dims=(300,300), mol_uff=None):
         return np.full((*dims, 3), 255, dtype=np.uint8)
     tmola = tmol.argmax()
     imgs = []
-    if tmol_template.molgrid is not None:
-        imgs.append(render_molgrid(tmola, dims=dims))
+    #if tmol_template.molgrid is not None:
+    #    imgs.append(render_molgrid(tmola, dims=dims))
     if tmol_template.atom_types is not None:
         if tmol_template.kps is not None or tmol_template.kps_1h is not None:
             #try:
