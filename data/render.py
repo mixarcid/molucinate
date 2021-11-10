@@ -215,10 +215,10 @@ def render_tmol(tmol, tmol_template=None, dims=(300,300), mol_uff=None):
     #    imgs.append(render_molgrid(tmola, dims=dims))
     if tmol_template.atom_types is not None:
         if tmol_template.kps is not None or tmol_template.kps_1h is not None:
-            #try:
-            imgs.append(render_kp(tmola, dims, mol_uff=mol_uff))
-            #except:
-            #    imgs.append(render_kp_pymol(tmola, dims))
+            try:
+                imgs.append(render_kp(tmola, dims, mol_uff=mol_uff))
+            except:
+                imgs.append(render_kp_pymol(tmola, dims))
         else:
             imgs.append(render_text(tmola.atom_str(), dims))
     if tmol.bonds is not None:
